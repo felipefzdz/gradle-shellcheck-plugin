@@ -13,6 +13,8 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private int maxErrors;
 
+    private String fileToCheck;
+
     /**
      * The maximum number of errors that are tolerated before breaking the build
      * or setting the failure property. Defaults to <tt>0</tt>.
@@ -34,5 +36,13 @@ public class ShellcheckExtension extends CodeQualityExtension {
      */
     public void setMaxErrors(int maxErrors) {
         this.maxErrors = maxErrors;
+    }
+
+    public String getFileToCheck() {
+        return fileToCheck;
+    }
+
+    public void setFileToCheck(String fileToCheck) {
+        this.fileToCheck = fileToCheck;
     }
 }

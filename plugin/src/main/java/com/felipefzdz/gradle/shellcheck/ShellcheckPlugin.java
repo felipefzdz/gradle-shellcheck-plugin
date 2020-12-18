@@ -19,5 +19,6 @@ public class ShellcheckPlugin implements Plugin<Project> {
     private void configureTaskConventionMapping(ShellcheckTask task) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("maxErrors", (Callable<Integer>) () -> extension.getMaxErrors());
+        taskMapping.map("fileToCheck", (Callable<String>) () -> extension.getFileToCheck());
     }
 }

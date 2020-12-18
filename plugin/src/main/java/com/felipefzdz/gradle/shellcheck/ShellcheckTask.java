@@ -9,12 +9,16 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.VerificationTask;
 
+import java.io.IOException;
+
 public class ShellcheckTask extends ConventionTask implements VerificationTask, Reporting<CheckstyleReports> {
 
     private int maxErrors;
 
+    private String fileToCheck;
+
     @TaskAction
-    public void run() {
+    public void run() throws IOException, InterruptedException {
         ShellcheckInvoker.invoke(this);
     }
 
@@ -63,5 +67,13 @@ public class ShellcheckTask extends ConventionTask implements VerificationTask, 
     @Override
     public boolean getIgnoreFailures() {
         return false;
+    }
+
+    public String getFileToCheck() {
+        return fileToCheck;
+    }
+
+    public void setFileToCheck(String fileToCheck) {
+        this.fileToCheck = fileToCheck;
     }
 }
