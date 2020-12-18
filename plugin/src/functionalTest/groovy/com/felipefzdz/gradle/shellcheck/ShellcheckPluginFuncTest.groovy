@@ -19,7 +19,11 @@ class ShellcheckPluginFuncTest extends Specification {
             """
 plugins {
     id('com.felipefzdz.gradle.shellcheck')
-}"""
+}
+shellcheck {
+    maxErrors = 3
+}
+"""
 
         when:
         GradleRunner runner = GradleRunner.create()
@@ -30,6 +34,6 @@ plugins {
         BuildResult result = runner.build()
 
         then:
-        result.getOutput().contains("Hello from plugin 'com.felipefzdz.gradle.shellcheck'")
+        result.getOutput().contains("Hello from 3")
     }
 }
