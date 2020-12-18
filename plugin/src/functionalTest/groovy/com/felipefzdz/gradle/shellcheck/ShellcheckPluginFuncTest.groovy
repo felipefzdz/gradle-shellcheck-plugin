@@ -14,7 +14,7 @@ class ShellcheckPluginFuncTest extends Specification {
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle") << ""
         def buildFile = new File(projectDir, "build.gradle")
-        buildFile << ""
+        buildFile.text = ''
         buildFile <<
             """
 plugins {
