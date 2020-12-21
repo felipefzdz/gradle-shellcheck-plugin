@@ -13,7 +13,6 @@ repositories {
 }
 
 dependencies {
-    implementation("com.google.code.gson:gson:2.8.6")
     implementation("org.codehaus.groovy:groovy:2.5.12")
     testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
 }

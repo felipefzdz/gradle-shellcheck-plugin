@@ -15,21 +15,16 @@ class ShellcheckPluginFuncTest extends Specification {
         def result = runner(projectDir).buildAndFail()
 
         then:
-        result.getOutput().contains("3 messages in total")
-        result.getOutput().contains("1 messages of type 2154")
-        result.getOutput().contains("2 messages of type 2086")
-        result.getOutput().contains("Shellcheck violations were found.")
+        result.getOutput().contains("Shellcheck files with violations: 1")
+        result.getOutput().contains("Shellcheck violations by severity: 2")
     }
 
     def "pass the build when the script has not violations"() {
         given:
         def projectDir = setupProject('without_violations')
 
-        when:
-        def result = runner(projectDir).build()
-
-        then:
-        result.getOutput().contains("0 messages in total")
+        expect:
+        runner(projectDir).build()
     }
 
 
@@ -37,7 +32,7 @@ class ShellcheckPluginFuncTest extends Specification {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("shellcheck")
+        runner.withArguments("shellcheck", "--stacktrace")
         runner.withProjectDir(projectDir)
         runner.withDebug(true)
         runner
