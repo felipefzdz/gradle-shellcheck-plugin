@@ -4,6 +4,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.internal.ConventionMapping;
 
+import java.io.File;
 import java.util.concurrent.Callable;
 
 public class ShellcheckPlugin implements Plugin<Project> {
@@ -18,7 +19,6 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     private void configureTaskConventionMapping(ShellcheckTask task) {
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("maxErrors", (Callable<Integer>) () -> extension.getMaxErrors());
-        taskMapping.map("fileToCheck", (Callable<String>) () -> extension.getFileToCheck());
+        taskMapping.map("shellScripts", (Callable<File>) () -> extension.getShellScripts());
     }
 }

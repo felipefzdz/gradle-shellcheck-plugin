@@ -14,12 +14,13 @@ import java.util.stream.Collectors;
 public class ShellcheckInvoker {
     private static final Gson gson = new Gson();
     public static void invoke(ShellcheckTask task) throws IOException, InterruptedException {
-        final String processOutput = runShellcheck(task.getFileToCheck(), "json");
+        final String processOutput = runShellcheck(task.getShellScripts(), "json");
+        System.out.println("processOutput = " + processOutput);
         ShellcheckOutput[] output = gson.fromJson(processOutput, ShellcheckOutput[].class);
         generateReport(output);
         Arrays.stream(output).forEach(entry -> System.out.println(entry.code + " : " + entry.message));
         if (output.length > 0) {
-            throw new GradleException("Shellcheck violations were found. " + runShellcheck(task.getFileToCheck(), "tty"));
+            throw new GradleException("Shellcheck violations were found. " + runShellcheck(task.getShellScripts(), "tty"));
         }
     }
 
@@ -30,21 +31,21 @@ public class ShellcheckInvoker {
 
     }
 
-    public static String runShellcheck(String fileToCheck, String format) throws IOException, InterruptedException {
-        final String dir = "/Users/felipe/code/gradle/gradle-shellcheck-plugin/plugin/src/functionalTest/resources";
+    public static String runShellcheck(File shellScripts, String format) throws IOException, InterruptedException {
         List<String> command = Arrays.asList(
             "docker",
             "run",
             "--rm",
             "-v",
-            dir + ":/mnt",
-            "koalaman/shellcheck:stable",
-            fileToCheck,
-            "-f",
-            format
+            shellScripts.getAbsolutePath() + ":/mnt",
+            "koalaman/shellcheck-alpine:stable",
+            "sh",
+            "-c",
+            "find /mnt -name '*.sh' | xargs shellcheck -f " + format
             );
+        System.out.println("command = " + command);
         ProcessBuilder builder = new ProcessBuilder(command)
-            .directory(new File(dir))
+            .directory(shellScripts)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();

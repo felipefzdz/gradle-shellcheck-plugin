@@ -9,7 +9,7 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "fail the build when the script has violations"() {
         given:
-        def projectDir = setupProject('script_with_violations.sh')
+        def projectDir = setupProject('with_violations')
 
         when:
         def result = runner(projectDir).buildAndFail()
@@ -23,7 +23,7 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "pass the build when the script has not violations"() {
         given:
-        def projectDir = setupProject('script_without_violations.sh')
+        def projectDir = setupProject('without_violations')
 
         when:
         def result = runner(projectDir).build()
@@ -43,7 +43,7 @@ class ShellcheckPluginFuncTest extends Specification {
         runner
     }
 
-    private File setupProject(String fileToCheck) {
+    private File setupProject(String folderToCheck) {
         File projectDir = new File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle") << ""
@@ -55,7 +55,7 @@ plugins {
     id('com.felipefzdz.gradle.shellcheck')
 }
 shellcheck {
-    fileToCheck = '$fileToCheck'
+    shellScripts = file("../../src/functionalTest/resources/$folderToCheck")
 }
 """
         projectDir
