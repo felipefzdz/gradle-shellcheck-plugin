@@ -36,6 +36,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("shellScripts", (Callable<File>) () -> extension.getShellScripts());
+        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("reportsDir", new Callable<File>() {
             @Override

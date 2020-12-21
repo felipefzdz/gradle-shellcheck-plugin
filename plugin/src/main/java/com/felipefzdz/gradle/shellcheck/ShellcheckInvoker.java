@@ -26,6 +26,8 @@ import java.util.Set;
 
 public class ShellcheckInvoker {
 
+    private static final String SHELLCHECK_NOFRAMES_SORTED_XSL = "shellcheck-noframes-sorted.xsl";
+
     public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         final ShellcheckReports reports = task.getReports();
         File xmlDestination = reports.getXml().getDestination();
@@ -44,7 +46,7 @@ public class ShellcheckInvoker {
             TransformerFactory factory = TransformerFactory.newInstance();
             InputStream stylesheet = reports.getHtml().getStylesheet() != null ?
                 new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
-                ShellcheckInvoker.class.getClassLoader().getResourceAsStream("checkstyle-noframes-sorted.xsl");
+                ShellcheckInvoker.class.getClassLoader().getResourceAsStream(SHELLCHECK_NOFRAMES_SORTED_XSL);
             Source xslt = new StreamSource(stylesheet);
             Transformer transformer = factory.newTransformer(xslt);
 
@@ -57,7 +59,12 @@ public class ShellcheckInvoker {
         }
         final ReportSummary reportSummary = calculateReportSummary(parseShellCheckXml(reports));
         if (reportSummary.filesWithError > 0) {
-            throw new GradleException(getMessage(reports, reportSummary));
+            final String message = getMessage(reports, reportSummary);
+            if (task.getIgnoreFailures()) {
+                task.getLogger().warn(message);
+            } else {
+                throw new GradleException(message);
+            }
         }
     }
 
@@ -127,7 +134,6 @@ public class ShellcheckInvoker {
                     }
                 }
             }
-
         }
         return new ReportSummary(filesWithError.size(), violationsBySeverityCount.size());
     }

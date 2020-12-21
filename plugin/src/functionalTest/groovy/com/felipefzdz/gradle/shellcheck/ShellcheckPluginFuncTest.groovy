@@ -7,7 +7,7 @@ import java.nio.file.Files
 
 class ShellcheckPluginFuncTest extends Specification {
 
-    def "fail the build when the script has violations"() {
+    def "fail the build when some scripts in the folder have violations"() {
         given:
         def projectDir = setupProject('with_violations')
 
@@ -15,13 +15,21 @@ class ShellcheckPluginFuncTest extends Specification {
         def result = runner(projectDir).buildAndFail()
 
         then:
-        result.getOutput().contains("Shellcheck files with violations: 1")
+        result.getOutput().contains("Shellcheck files with violations: 2")
         result.getOutput().contains("Shellcheck violations by severity: 2")
     }
 
-    def "pass the build when the script has not violations"() {
+    def "pass the build when no script in the folder has violations"() {
         given:
         def projectDir = setupProject('without_violations')
+
+        expect:
+        runner(projectDir).build()
+    }
+
+    def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
+        given:
+        def projectDir = setupProject('with_violations', true)
 
         expect:
         runner(projectDir).build()
@@ -38,7 +46,7 @@ class ShellcheckPluginFuncTest extends Specification {
         runner
     }
 
-    private File setupProject(String folderToCheck) {
+    private File setupProject(String folderToCheck, boolean ignoreFailures = false) {
         File projectDir = new File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle") << ""
@@ -51,6 +59,7 @@ plugins {
 }
 shellcheck {
     shellScripts = file("../../src/functionalTest/resources/$folderToCheck")
+    ${ignoreFailures ? "ignoreFailures = true" : ""}
 }
 """
         projectDir

@@ -97,10 +97,7 @@
           <img src="http://jakarta.apache.org/images/jakarta-logo.gif" alt="http://jakarta.apache.org" align="left" border="0"/>
           </a-->
         </td>
-    		<td class="text-align:right"><h2>CheckStyle Audit</h2></td>
-    		</tr>
-    		<tr>
-    		<td class="text-align:right">Designed for use with <a href='http://checkstyle.sourceforge.net/'>CheckStyle</a> and <a href='http://jakarta.apache.org'>Ant</a>.</td>
+    		<td class="text-align:right"><h2>Shellcheck Audit</h2></td>
     		</tr>
       </table>
     	<hr size="1"/>
