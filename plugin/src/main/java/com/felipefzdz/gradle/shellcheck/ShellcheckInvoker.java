@@ -76,7 +76,7 @@ public class ShellcheckInvoker {
     }
 
     public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors) throws IOException, InterruptedException {
-        StringBuilder shellcheckCommand = new StringBuilder("find /mnt -name '*.sh' | xargs shellcheck");
+        StringBuilder shellcheckCommand = new StringBuilder("find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck");
         shellcheckCommand.append(" -f " + format);
 
         List<String> command = Arrays.asList(
@@ -86,7 +86,7 @@ public class ShellcheckInvoker {
             maybeExcludeErrors.map(e -> "SHELLCHECK_OPTS=\"$SHELLCHECK_OPTS\"").orElse(" "),
             "--rm",
             "-v",
-            shellScripts.getAbsolutePath() + ":/mnt",
+            shellScripts.getAbsolutePath() + ":/" + shellScripts.getAbsolutePath(),
             "koalaman/shellcheck-alpine:stable",
             "sh",
             "-c",
