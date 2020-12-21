@@ -43,7 +43,7 @@ shellcheck {
         def shellcheckBlock = """
 shellcheck {
     shellScripts = file("../../src/functionalTest/resources/with_violations")
-    ignoreFailures = true
+    isIgnoreFailures = true
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -57,7 +57,7 @@ shellcheck {
         def shellcheckBlock = """
 shellcheck {
     shellScripts = file("../../src/functionalTest/resources/with_violations")
-    excludeErrors = ['SC1083', 'SC2154']
+    excludeErrors = listOf("SC1083", "SC2154")
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -83,13 +83,13 @@ shellcheck {
     private File setupProject(String shellcheckBlock) {
         File projectDir = new File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
-        new File(projectDir, "settings.gradle") << ""
-        def buildFile = new File(projectDir, "build.gradle")
+        new File(projectDir, "settings.gradle.kts") << ""
+        def buildFile = new File(projectDir, "build.gradle.kts")
         buildFile.text = ''
         buildFile <<
             """
 plugins {
-    id('com.felipefzdz.gradle.shellcheck')
+    id("com.felipefzdz.gradle.shellcheck")
 }
 ${shellcheckBlock}
 """
