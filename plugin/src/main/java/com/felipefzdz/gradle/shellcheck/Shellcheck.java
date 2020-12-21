@@ -21,6 +21,8 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private File shellScripts;
 
     private final ShellcheckReports reports;
+    private boolean showViolations = true;
+    private String excludeError;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -105,11 +107,35 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
      *
      * @param configureAction The configuration
      * @return The reports container
-     * @since 3.0
      */
     @Override
     public ShellcheckReports reports(Action<? super ShellcheckReports> configureAction) {
         configureAction.execute(reports);
         return reports;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console.
+     *
+     * @return true if violations should be displayed on console
+     */
+    @Console
+    public boolean isShowViolations() {
+        return showViolations;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console.
+     */
+    public void setShowViolations(boolean showViolations) {
+        this.showViolations = showViolations;
+    }
+
+    public String getExcludeError() {
+        return excludeError;
+    }
+
+    public void setExcludeError(String excludeError) {
+        this.excludeError = excludeError;
     }
 }

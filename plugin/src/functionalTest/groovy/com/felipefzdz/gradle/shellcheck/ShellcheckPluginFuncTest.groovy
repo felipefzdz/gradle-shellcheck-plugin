@@ -17,6 +17,7 @@ class ShellcheckPluginFuncTest extends Specification {
         then:
         result.getOutput().contains("Shellcheck files with violations: 2")
         result.getOutput().contains("Shellcheck violations by severity: 3")
+        result.getOutput().contains("SC1083") // Code that will be excluded in the next tests
     }
 
     def "pass the build when no script in the folder has violations"() {
@@ -35,6 +36,16 @@ class ShellcheckPluginFuncTest extends Specification {
         runner(projectDir).build()
     }
 
+    def "exclude violations"() {
+        given:
+        def projectDir = setupProject('with_violations', false, "SC1083")
+
+        when:
+        def result = runner(projectDir).buildAndFail()
+
+        then:
+        !result.getOutput().contains("SC1083")
+    }
 
     private GradleRunner runner(File projectDir) {
         GradleRunner runner = GradleRunner.create()
@@ -46,7 +57,7 @@ class ShellcheckPluginFuncTest extends Specification {
         runner
     }
 
-    private File setupProject(String folderToCheck, boolean ignoreFailures = false) {
+    private File setupProject(String folderToCheck, boolean ignoreFailures = false, String excludeError = null) {
         File projectDir = new File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle") << ""
@@ -60,6 +71,7 @@ plugins {
 shellcheck {
     shellScripts = file("../../src/functionalTest/resources/$folderToCheck")
     ${ignoreFailures ? "ignoreFailures = true" : ""}
+    ${excludeError ? "excludeError = '${excludeError}'" : ""}
 }
 """
         projectDir

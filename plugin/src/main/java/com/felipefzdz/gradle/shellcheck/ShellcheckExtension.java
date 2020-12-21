@@ -10,6 +10,9 @@ public class ShellcheckExtension extends CodeQualityExtension {
     private final Project project;
 
     private File shellScripts;
+    private boolean showViolations = true;
+    private String excludeError;
+
 
     public ShellcheckExtension(Project project) {
         this.project = project;
@@ -21,5 +24,31 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     public void setShellScripts(File shellScripts) {
         this.shellScripts = shellScripts;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console. Defaults to <tt>true</tt>.
+     *
+     * Example: showViolations = false
+     */
+    public boolean isShowViolations() {
+        return showViolations;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console. Defaults to <tt>true</tt>.
+     *
+     * Example: showViolations = false
+     */
+    public void setShowViolations(boolean showViolations) {
+        this.showViolations = showViolations;
+    }
+
+    public String getExcludeError() {
+        return excludeError;
+    }
+
+    public void setExcludeError(String excludeError) {
+        this.excludeError = excludeError;
     }
 }

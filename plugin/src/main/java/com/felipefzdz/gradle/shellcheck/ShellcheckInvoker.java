@@ -19,10 +19,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ShellcheckInvoker {
 
@@ -30,15 +27,19 @@ public class ShellcheckInvoker {
 
     public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         final ShellcheckReports reports = task.getReports();
+        final Optional<String> maybeExcludeError = Optional.ofNullable(task.getExcludeError());
         File xmlDestination = reports.getXml().getDestination();
 
         if (isHtmlReportEnabledOnly(reports)) {
             xmlDestination = new File(task.getTemporaryDir(), reports.getXml().getDestination().getName());
         }
 
+        if (task.isShowViolations()) {
+            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeError));
+        }
+
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle");
-            System.out.println("checkstyleFormatted = " + checkstyleFormatted);
+            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeError);
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
@@ -74,7 +75,11 @@ public class ShellcheckInvoker {
         return dBuilder.parse(reports.getXml().getDestination());
     }
 
-    public static String runShellcheck(File shellScripts, String format) throws IOException, InterruptedException {
+    public static String runShellcheck(File shellScripts, String format, Optional<String> maybeExcludeError) throws IOException, InterruptedException {
+        StringBuilder shellcheckCommand = new StringBuilder("find /mnt -name '*.sh' | xargs shellcheck");
+        shellcheckCommand.append(" -f " + format);
+        maybeExcludeError.ifPresent(excludeError -> shellcheckCommand.append(" -e " + excludeError));
+
         List<String> command = Arrays.asList(
             "docker",
             "run",
@@ -84,7 +89,7 @@ public class ShellcheckInvoker {
             "koalaman/shellcheck-alpine:stable",
             "sh",
             "-c",
-            "find /mnt -name '*.sh' | xargs shellcheck -f " + format
+            shellcheckCommand.toString()
         );
         ProcessBuilder builder = new ProcessBuilder(command)
             .directory(shellScripts)
