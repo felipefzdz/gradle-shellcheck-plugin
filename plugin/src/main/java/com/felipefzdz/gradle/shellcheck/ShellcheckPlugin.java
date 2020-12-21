@@ -7,12 +7,12 @@ import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.plugins.ReportingBasePlugin;
-import org.gradle.api.plugins.quality.Checkstyle;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reporting.ReportingExtension;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import static org.gradle.api.internal.lambdas.SerializableLambdas.action;
@@ -38,7 +38,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
         taskMapping.map("shellScripts", (Callable<File>) () -> extension.getShellScripts());
         taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
-        taskMapping.map("excludeError", (Callable<String>) () -> extension.getExcludeError());
+        taskMapping.map("excludeErrors", (Callable<List<String>>) () -> extension.getExcludeErrors());
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file("shellcheck"));
     }

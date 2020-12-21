@@ -4,6 +4,7 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.quality.CodeQualityExtension;
 
 import java.io.File;
+import java.util.List;
 
 public class ShellcheckExtension extends CodeQualityExtension {
 
@@ -11,7 +12,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private File shellScripts;
     private boolean showViolations = true;
-    private String excludeError;
+    private List<String> excludeErrors;
 
 
     public ShellcheckExtension(Project project) {
@@ -44,11 +45,11 @@ public class ShellcheckExtension extends CodeQualityExtension {
         this.showViolations = showViolations;
     }
 
-    public String getExcludeError() {
-        return excludeError;
+    public List<String> getExcludeErrors() {
+        return excludeErrors;
     }
 
-    public void setExcludeError(String excludeError) {
-        this.excludeError = excludeError;
+    public void setExcludeErrors(List<String> excludeErrors) {
+        this.excludeErrors = excludeErrors;
     }
 }

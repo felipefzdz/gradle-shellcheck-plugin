@@ -27,7 +27,7 @@ public class ShellcheckInvoker {
 
     public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         final ShellcheckReports reports = task.getReports();
-        final Optional<String> maybeExcludeError = Optional.ofNullable(task.getExcludeError());
+        final Optional<List<String>> maybeExcludeErrors = Optional.ofNullable(task.getExcludeErrors());
         File xmlDestination = reports.getXml().getDestination();
 
         if (isHtmlReportEnabledOnly(reports)) {
@@ -35,11 +35,11 @@ public class ShellcheckInvoker {
         }
 
         if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeError));
+            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeErrors));
         }
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeError);
+            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeErrors);
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
@@ -75,14 +75,15 @@ public class ShellcheckInvoker {
         return dBuilder.parse(reports.getXml().getDestination());
     }
 
-    public static String runShellcheck(File shellScripts, String format, Optional<String> maybeExcludeError) throws IOException, InterruptedException {
+    public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors) throws IOException, InterruptedException {
         StringBuilder shellcheckCommand = new StringBuilder("find /mnt -name '*.sh' | xargs shellcheck");
         shellcheckCommand.append(" -f " + format);
-        maybeExcludeError.ifPresent(excludeError -> shellcheckCommand.append(" -e " + excludeError));
 
         List<String> command = Arrays.asList(
             "docker",
             "run",
+            maybeExcludeErrors.map(e -> "-e ").orElse("-e"),
+            maybeExcludeErrors.map(e -> "SHELLCHECK_OPTS=\"$SHELLCHECK_OPTS\"").orElse(" "),
             "--rm",
             "-v",
             shellScripts.getAbsolutePath() + ":/mnt",
@@ -96,6 +97,9 @@ public class ShellcheckInvoker {
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();
+        maybeExcludeErrors
+            .map(e -> "\"-e " + String.join(" -e ", e) + "\"")
+            .ifPresent(opts -> builder.environment().put("SHELLCHECK_OPTS", opts));
 
         builder.redirectErrorStream(true);
 
@@ -106,7 +110,7 @@ public class ShellcheckInvoker {
             new InputStreamReader(process.getInputStream()));) {
             String readLine;
             while ((readLine = processOutputReader.readLine()) != null) {
-                processOutput.append(readLine + System.lineSeparator());
+                processOutput.append(readLine).append(System.lineSeparator());
             }
             process.waitFor();
         }

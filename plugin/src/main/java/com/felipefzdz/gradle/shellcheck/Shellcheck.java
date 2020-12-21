@@ -15,6 +15,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
@@ -22,7 +23,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
-    private String excludeError;
+    private List<String> excludeErrors;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -131,11 +132,11 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         this.showViolations = showViolations;
     }
 
-    public String getExcludeError() {
-        return excludeError;
+    public List<String> getExcludeErrors() {
+        return excludeErrors;
     }
 
-    public void setExcludeError(String excludeError) {
-        this.excludeError = excludeError;
+    public void setExcludeErrors(List<String> excludeErrors) {
+        this.excludeErrors = excludeErrors;
     }
 }

@@ -57,7 +57,7 @@ shellcheck {
         def shellcheckBlock = """
 shellcheck {
     shellScripts = file("../../src/functionalTest/resources/with_violations")
-    excludeError = 'SC1083'
+    excludeErrors = ['SC1083', 'SC2154']
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -67,6 +67,7 @@ shellcheck {
 
         then:
         !result.getOutput().contains("SC1083")
+        !result.getOutput().contains("SC2154")
     }
 
     private GradleRunner runner(File projectDir) {
