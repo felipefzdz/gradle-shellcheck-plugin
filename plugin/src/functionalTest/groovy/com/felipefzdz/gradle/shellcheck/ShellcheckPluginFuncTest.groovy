@@ -16,7 +16,7 @@ class ShellcheckPluginFuncTest extends Specification {
 
         then:
         result.getOutput().contains("Shellcheck files with violations: 2")
-        result.getOutput().contains("Shellcheck violations by severity: 2")
+        result.getOutput().contains("Shellcheck violations by severity: 3")
     }
 
     def "pass the build when no script in the folder has violations"() {

@@ -145,7 +145,7 @@ public class ShellcheckInvoker {
 
     private static String getViolationMessage(ReportSummary reportSummary) {
         return reportSummary.filesWithError > 0 ?
-            "Shellcheck files with violations: " + reportSummary.filesWithError + "\n Shellcheck violations by severity: " + reportSummary.violationsBySeverity :
+            "Shellcheck files with violations: " + reportSummary.filesWithError + "\nShellcheck violations by severity: " + reportSummary.violationsBySeverity :
             "\n";
     }
 
