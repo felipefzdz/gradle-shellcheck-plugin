@@ -9,7 +9,12 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "fail the build when some scripts in the folder have violations"() {
         given:
-        def projectDir = setupProject('with_violations')
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/with_violations")
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
 
         when:
         def result = runner(projectDir).buildAndFail()
@@ -22,7 +27,12 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "pass the build when no script in the folder has violations"() {
         given:
-        def projectDir = setupProject('without_violations')
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/without_violations")
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
 
         expect:
         runner(projectDir).build()
@@ -30,7 +40,13 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
         given:
-        def projectDir = setupProject('with_violations', true)
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    ignoreFailures = true
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
 
         expect:
         runner(projectDir).build()
@@ -38,7 +54,13 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "exclude violations"() {
         given:
-        def projectDir = setupProject('with_violations', false, "SC1083")
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    excludeError = 'SC1083'
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
 
         when:
         def result = runner(projectDir).buildAndFail()
@@ -57,7 +79,7 @@ class ShellcheckPluginFuncTest extends Specification {
         runner
     }
 
-    private File setupProject(String folderToCheck, boolean ignoreFailures = false, String excludeError = null) {
+    private File setupProject(String shellcheckBlock) {
         File projectDir = new File("build/functionalTest")
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle") << ""
@@ -68,11 +90,7 @@ class ShellcheckPluginFuncTest extends Specification {
 plugins {
     id('com.felipefzdz.gradle.shellcheck')
 }
-shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/$folderToCheck")
-    ${ignoreFailures ? "ignoreFailures = true" : ""}
-    ${excludeError ? "excludeError = '${excludeError}'" : ""}
-}
+${shellcheckBlock}
 """
         projectDir
     }
