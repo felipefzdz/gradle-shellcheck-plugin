@@ -22,7 +22,7 @@ gradlePlugin {
         id = "com.felipefzdz.gradle.shellcheck"
         implementationClass = "com.felipefzdz.gradle.shellcheck.ShellcheckPlugin"
         displayName = "Shellcheck"
-        description = "The Shellcheck Gradle plugin performs quality checks on your project’s shell source files using Shellcheck and generates reports     from these checks."
+        description = "The Shellcheck Gradle plugin performs quality checks on your project’s Shell source files using Shellcheck and generates reports from these checks."
     }
 }
 
