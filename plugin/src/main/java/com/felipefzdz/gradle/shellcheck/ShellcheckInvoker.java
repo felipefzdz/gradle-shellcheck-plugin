@@ -87,7 +87,7 @@ public class ShellcheckInvoker {
             "--rm",
             "-v",
             shellScripts.getAbsolutePath() + ":/" + shellScripts.getAbsolutePath(),
-            "koalaman/shellcheck-alpine:stable",
+            "koalaman/shellcheck-alpine:v0.7.1",
             "sh",
             "-c",
             shellcheckCommand.toString()
