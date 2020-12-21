@@ -127,6 +127,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     /**
      * Whether rule violations are to be displayed on the console.
+     * @param showViolations
      */
     public void setShowViolations(boolean showViolations) {
         this.showViolations = showViolations;

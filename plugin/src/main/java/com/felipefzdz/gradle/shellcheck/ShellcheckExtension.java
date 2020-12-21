@@ -28,7 +28,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
     }
 
     /**
-     * Whether rule violations are to be displayed on the console. Defaults to <tt>true</tt>.
+     * Whether rule violations are to be displayed on the console. Defaults to true.
      *
      * Example: showViolations = false
      */
@@ -37,7 +37,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
     }
 
     /**
-     * Whether rule violations are to be displayed on the console. Defaults to <tt>true</tt>.
+     * Whether rule violations are to be displayed on the console. Defaults to true.
      *
      * Example: showViolations = false
      */
