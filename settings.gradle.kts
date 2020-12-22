@@ -3,7 +3,7 @@ plugins {
 }
 
 rootProject.name = "gradle-shellcheck-plugin"
-include("plugin")
+include("shellcheck")
 
 gradleEnterprise {
     buildScan {
