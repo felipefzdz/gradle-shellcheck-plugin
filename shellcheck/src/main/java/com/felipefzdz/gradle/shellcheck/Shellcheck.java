@@ -133,6 +133,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         this.showViolations = showViolations;
     }
 
+    @Input
     public List<String> getExcludeErrors() {
         return excludeErrors;
     }
