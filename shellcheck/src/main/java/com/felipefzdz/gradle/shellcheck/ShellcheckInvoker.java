@@ -87,7 +87,7 @@ public class ShellcheckInvoker {
             maybeExcludeErrors.map(e -> "SHELLCHECK_OPTS=\"$SHELLCHECK_OPTS\"").orElse(" "),
             "--rm",
             "-v",
-            shellScripts.getAbsolutePath() + ":/" + shellScripts.getAbsolutePath(),
+            "\"" + shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath() + "\"",
             "koalaman/shellcheck-alpine:v0.7.1",
             "sh",
             "-c",
