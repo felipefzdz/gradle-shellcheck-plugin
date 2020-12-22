@@ -1,6 +1,7 @@
 package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.w3c.dom.Document;
@@ -35,11 +36,11 @@ public class ShellcheckInvoker {
         }
 
         if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeErrors));
+            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeErrors, task.getLogger()));
         }
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeErrors);
+            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeErrors, task.getLogger());
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
@@ -75,7 +76,7 @@ public class ShellcheckInvoker {
         return dBuilder.parse(reports.getXml().getDestination());
     }
 
-    public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors) throws IOException, InterruptedException {
+    public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors, Logger logger) throws IOException, InterruptedException {
         StringBuilder shellcheckCommand = new StringBuilder("find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck");
         shellcheckCommand.append(" -f " + format);
 
@@ -104,6 +105,8 @@ public class ShellcheckInvoker {
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
+        process.info().commandLine().ifPresent(c -> logger.debug("Docker command to run Shellcheck: " + c));
+
         StringBuilder processOutput = new StringBuilder();
 
         try (BufferedReader processOutputReader = new BufferedReader(
