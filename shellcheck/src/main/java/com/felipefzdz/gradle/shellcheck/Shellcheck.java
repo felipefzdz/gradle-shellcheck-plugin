@@ -134,6 +134,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     }
 
     @Input
+    @Optional
     public List<String> getExcludeErrors() {
         return excludeErrors;
     }
