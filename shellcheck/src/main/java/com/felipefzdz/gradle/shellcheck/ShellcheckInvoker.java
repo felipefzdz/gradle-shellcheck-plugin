@@ -28,7 +28,6 @@ public class ShellcheckInvoker {
 
     public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         final ShellcheckReports reports = task.getReports();
-        final Optional<List<String>> maybeExcludeErrors = Optional.ofNullable(task.getExcludeErrors());
         File xmlDestination = reports.getXml().getDestination();
 
         if (isHtmlReportEnabledOnly(reports)) {
@@ -36,11 +35,11 @@ public class ShellcheckInvoker {
         }
 
         if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeErrors, task.getLogger()));
+            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", task.getLogger()));
         }
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeErrors, task.getLogger());
+            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", task.getLogger());
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
@@ -76,36 +75,28 @@ public class ShellcheckInvoker {
         return dBuilder.parse(reports.getXml().getDestination());
     }
 
-    public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors, Logger logger) throws IOException, InterruptedException {
-        StringBuilder shellcheckCommand = new StringBuilder("find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck");
-        shellcheckCommand.append(" -f " + format);
-
+    public static String runShellcheck(File shellScripts, String format, Logger logger) throws IOException, InterruptedException {
         List<String> command = Arrays.asList(
             "docker",
             "run",
-            maybeExcludeErrors.map(e -> "-e ").orElse("-e"),
-            maybeExcludeErrors.map(e -> "SHELLCHECK_OPTS=\"$SHELLCHECK_OPTS\"").orElse(" "),
             "--rm",
             "-v",
-            "\"" + shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath() + "\"",
+            shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath(),
             "koalaman/shellcheck-alpine:v0.7.1",
             "sh",
             "-c",
-            shellcheckCommand.toString()
-        );
+            "find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck -f " + format);
+
         ProcessBuilder builder = new ProcessBuilder(command)
             .directory(shellScripts)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();
-        maybeExcludeErrors
-            .map(e -> "\"-e " + String.join(" -e ", e) + "\"")
-            .ifPresent(opts -> builder.environment().put("SHELLCHECK_OPTS", opts));
 
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
-        process.info().commandLine().ifPresent(c -> logger.debug("Docker command to run Shellcheck: " + c));
+        process.info().commandLine().ifPresent(c -> logger.lifecycle("Docker command to run Shellcheck: " + c));
 
         StringBuilder processOutput = new StringBuilder();
 

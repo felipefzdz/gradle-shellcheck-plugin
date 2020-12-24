@@ -52,24 +52,6 @@ shellcheck {
         runner(projectDir).build()
     }
 
-    def "exclude violations"() {
-        given:
-        def shellcheckBlock = """
-shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/with_violations")
-    excludeErrors = listOf("SC1083", "SC2154")
-}
-"""
-        def projectDir = setupProject(shellcheckBlock)
-
-        when:
-        def result = runner(projectDir).buildAndFail()
-
-        then:
-        !result.getOutput().contains("SC1083")
-        !result.getOutput().contains("SC2154")
-    }
-
     private GradleRunner runner(File projectDir) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()

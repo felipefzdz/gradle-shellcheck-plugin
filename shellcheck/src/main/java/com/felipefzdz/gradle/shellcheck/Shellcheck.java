@@ -23,7 +23,6 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
-    private List<String> excludeErrors;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -131,15 +130,5 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
      */
     public void setShowViolations(boolean showViolations) {
         this.showViolations = showViolations;
-    }
-
-    @Input
-    @Optional
-    public List<String> getExcludeErrors() {
-        return excludeErrors;
-    }
-
-    public void setExcludeErrors(List<String> excludeErrors) {
-        this.excludeErrors = excludeErrors;
     }
 }

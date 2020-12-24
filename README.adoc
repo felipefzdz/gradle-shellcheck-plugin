@@ -46,7 +46,6 @@ See the link:{groovyDslPath}/org.gradle.api.plugins.quality.ShellcheckExtension.
 ----
 shellcheck {
     shellScripts = file("src/shellScripts")
-    excludeErrors = listOf("SC1083", "SC2154")
     isIgnoreFailures = true
     isShowViolations = true
 }
@@ -54,7 +53,6 @@ shellcheck {
 
 * shellScripts - Folder where the shell scripts are located. It will search recursively matching `.sh` files.
 Future versions will enhance this functionality to allow other detection mechanisms (and to be cache incremental friendly)
-* excludeErrors - Violations that are excluded from be taking in account.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
 

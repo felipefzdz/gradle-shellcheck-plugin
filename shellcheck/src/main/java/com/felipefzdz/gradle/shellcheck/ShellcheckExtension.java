@@ -12,8 +12,6 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private File shellScripts;
     private boolean showViolations = true;
-    private List<String> excludeErrors;
-
 
     public ShellcheckExtension(Project project) {
         this.project = project;
@@ -43,13 +41,5 @@ public class ShellcheckExtension extends CodeQualityExtension {
      */
     public void setShowViolations(boolean showViolations) {
         this.showViolations = showViolations;
-    }
-
-    public List<String> getExcludeErrors() {
-        return excludeErrors;
-    }
-
-    public void setExcludeErrors(List<String> excludeErrors) {
-        this.excludeErrors = excludeErrors;
     }
 }
