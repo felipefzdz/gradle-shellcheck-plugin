@@ -40,6 +40,7 @@ public class ShellcheckInvoker {
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
             String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", task.getLogger());
+            task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
