@@ -31,14 +31,9 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellcheckInvoker {
 
@@ -117,7 +112,7 @@ public class ShellcheckInvoker {
                 .withFollowStream(true)
                 .exec(loggingCallback)
                 .awaitStarted();
-            loggingCallback.awaitCompletion(5, SECONDS);
+            loggingCallback.awaitCompletion();
             return String.join("\n", logs);
         } finally {
             try {
@@ -135,7 +130,8 @@ public class ShellcheckInvoker {
             .ifPresent(opts -> command.withEnv("SHELLCHECK_OPTS=\"" + opts + "\""));
         command
             .withHostConfig(HostConfig.newHostConfig().withBinds(Bind.parse(shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath())))
-            .withCmd("sh", "-c", "find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck -f " + format);
+            .withCmd("sh", "-c", "find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck -f " + format)
+            .withAttachStdout(true);
         return command.exec().getId();
     }
 
