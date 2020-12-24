@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "0.2.8"
+version = "0.2.7"
 
 repositories {
     jcenter()
@@ -14,8 +14,6 @@ repositories {
 
 dependencies {
     implementation("org.codehaus.groovy:groovy:2.5.12")
-    implementation("com.github.docker-java:docker-java-core:3.2.7")
-    implementation("com.github.docker-java:docker-java-transport-httpclient5:3.2.7")
     testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
 }
 

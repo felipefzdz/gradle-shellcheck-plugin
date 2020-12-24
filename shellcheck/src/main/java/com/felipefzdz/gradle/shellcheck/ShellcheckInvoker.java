@@ -1,18 +1,5 @@
 package com.felipefzdz.gradle.shellcheck;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.command.CreateContainerCmd;
-import com.github.dockerjava.api.exception.InternalServerErrorException;
-import com.github.dockerjava.api.exception.NotFoundException;
-import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientConfig;
-import com.github.dockerjava.core.DockerClientImpl;
-import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
-import com.github.dockerjava.transport.DockerHttpClient;
 import org.gradle.api.GradleException;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.reporting.SingleFileReport;
@@ -41,19 +28,19 @@ public class ShellcheckInvoker {
 
     public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         final ShellcheckReports reports = task.getReports();
+        final Optional<List<String>> maybeExcludeErrors = Optional.ofNullable(task.getExcludeErrors());
         File xmlDestination = reports.getXml().getDestination();
 
         if (isHtmlReportEnabledOnly(reports)) {
             xmlDestination = new File(task.getTemporaryDir(), reports.getXml().getDestination().getName());
         }
 
-        final Optional<List<String>> maybeExcludeErrors = Optional.ofNullable(task.getExcludeErrors());
         if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheckWithJavaLibrary(task.getShellScripts(), "tty", maybeExcludeErrors, task.getLogger()));
+            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", maybeExcludeErrors, task.getLogger()));
         }
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheckWithJavaLibrary(task.getShellScripts(), "checkstyle", maybeExcludeErrors, task.getLogger());
+            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", maybeExcludeErrors, task.getLogger());
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 
@@ -89,59 +76,48 @@ public class ShellcheckInvoker {
         return dBuilder.parse(reports.getXml().getDestination());
     }
 
-    public static String runShellcheckWithJavaLibrary(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors, Logger logger) throws IOException, InterruptedException {
-        final DockerClient dockerClient = getDockerClient();
-        final String id = createContainer(shellScripts, maybeExcludeErrors, dockerClient, format);
-        return startContainer(logger, dockerClient, id);
-    }
+    public static String runShellcheck(File shellScripts, String format, Optional<List<String>> maybeExcludeErrors, Logger logger) throws IOException, InterruptedException {
+        StringBuilder shellcheckCommand = new StringBuilder("find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck");
+        shellcheckCommand.append(" -f " + format);
 
-    private static String startContainer(Logger logger, DockerClient dockerClient, String id) throws InterruptedException {
-        try {
-            final List<String> logs = new ArrayList<>();
-            dockerClient.startContainerCmd(id).exec();
-            final ResultCallback.Adapter<Frame> loggingCallback = new ResultCallback.Adapter<>() {
-                @Override
-                public void onNext(Frame item) {
-                    logs.add(new String(item.getPayload()));
-                }
-            };
-            dockerClient
-                .logContainerCmd(id)
-                .withStdOut(true)
-                .withStdErr(true)
-                .withFollowStream(true)
-                .exec(loggingCallback)
-                .awaitStarted();
-            loggingCallback.awaitCompletion();
-            return String.join("\n", logs);
-        } finally {
-            try {
-                dockerClient.removeContainerCmd(id).withRemoveVolumes(true).withForce(true).exec();
-            } catch (NotFoundException | InternalServerErrorException e) {
-                logger.error("Swallowed exception while removing container", e);
-            }
-        }
-    }
-
-    private static String createContainer(File shellScripts, Optional<List<String>> maybeExcludeErrors, DockerClient dockerClient, String format) {
-        final CreateContainerCmd command = dockerClient.createContainerCmd("koalaman/shellcheck-alpine:v0.7.1");
+        List<String> command = Arrays.asList(
+            "docker",
+            "run",
+            maybeExcludeErrors.map(e -> "-e ").orElse("-e"),
+            maybeExcludeErrors.map(e -> "SHELLCHECK_OPTS=\"$SHELLCHECK_OPTS\"").orElse(" "),
+            "--rm",
+            "-v",
+            "\"" + shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath() + "\"",
+            "koalaman/shellcheck-alpine:v0.7.1",
+            "sh",
+            "-c",
+            shellcheckCommand.toString()
+        );
+        ProcessBuilder builder = new ProcessBuilder(command)
+            .directory(shellScripts)
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectErrorStream(true);
+        builder.environment().clear();
         maybeExcludeErrors
-            .map(exclusion -> "\"-e " + String.join(" -e ", exclusion) + "\"")
-            .ifPresent(opts -> command.withEnv("SHELLCHECK_OPTS=\"" + opts + "\""));
-        command
-            .withHostConfig(HostConfig.newHostConfig().withBinds(Bind.parse(shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath())))
-            .withCmd("sh", "-c", "find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck -f " + format)
-            .withAttachStdout(true);
-        return command.exec().getId();
-    }
+            .map(e -> "\"-e " + String.join(" -e ", e) + "\"")
+            .ifPresent(opts -> builder.environment().put("SHELLCHECK_OPTS", opts));
 
-    private static DockerClient getDockerClient() {
-        final DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
-        final DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
-            .dockerHost(config.getDockerHost())
-            .sslConfig(config.getSSLConfig())
-            .build();
-        return DockerClientImpl.getInstance(config, httpClient);
+        builder.redirectErrorStream(true);
+
+        Process process = builder.start();
+        process.info().commandLine().ifPresent(c -> logger.debug("Docker command to run Shellcheck: " + c));
+
+        StringBuilder processOutput = new StringBuilder();
+
+        try (BufferedReader processOutputReader = new BufferedReader(
+            new InputStreamReader(process.getInputStream()));) {
+            String readLine;
+            while ((readLine = processOutputReader.readLine()) != null) {
+                processOutput.append(readLine).append(System.lineSeparator());
+            }
+            process.waitFor();
+        }
+        return processOutput.toString().trim();
     }
 
     private static boolean isHtmlReportEnabledOnly(ShellcheckReports reports) {
@@ -186,8 +162,8 @@ public class ShellcheckInvoker {
     }
 
     static class ReportSummary {
-        private final int filesWithError;
-        private final int violationsBySeverity;
+        private int filesWithError;
+        private int violationsBySeverity;
 
         public ReportSummary(int filesWithError, int violationsBySeverity) {
             this.filesWithError = filesWithError;
