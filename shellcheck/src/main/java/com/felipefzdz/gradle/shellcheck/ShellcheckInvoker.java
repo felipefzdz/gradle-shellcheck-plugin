@@ -96,7 +96,7 @@ public class ShellcheckInvoker {
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
-        process.info().commandLine().ifPresent(c -> logger.lifecycle("Docker command to run Shellcheck: " + c));
+        process.info().commandLine().ifPresent(c -> logger.debug("Docker command to run Shellcheck: " + c));
 
         StringBuilder processOutput = new StringBuilder();
 

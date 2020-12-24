@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "0.2.10"
+version = "0.2.11"
 
 repositories {
     jcenter()
