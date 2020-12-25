@@ -65,6 +65,49 @@ shellcheck {
         runner(projectDir).build()
     }
 
+    def "only generate html reports"() {
+
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/with_violations")
+}
+
+tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
+    reports {
+        xml.isEnabled = false
+        html.isEnabled = true
+    }
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
+
+        when:
+        runner(projectDir).buildAndFail()
+
+        then:
+        new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
+        !new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
+    }
+
+    def "generate html and xml reports by default"() {
+
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/with_violations")
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
+
+        when:
+        runner(projectDir).buildAndFail()
+
+        then:
+        new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
+        new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
+    }
+
     private GradleRunner runner(File projectDir) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
@@ -77,6 +120,7 @@ shellcheck {
 
     private File setupProject(String shellcheckBlock) {
         File projectDir = new File("build/functionalTest")
+        projectDir.deleteDir()
         Files.createDirectories(projectDir.toPath())
         new File(projectDir, "settings.gradle.kts") << ""
         def buildFile = new File(projectDir, "build.gradle.kts")

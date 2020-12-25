@@ -59,10 +59,11 @@ public class ShellcheckInvoker {
             transformer.transform(text, new StreamResult(reports.getHtml().getDestination()));
         }
 
+        final ReportSummary reportSummary = calculateReportSummary(parseShellCheckXml(xmlDestination));
+
         if (isHtmlReportEnabledOnly(reports)) {
             Files.deleteIfExists(xmlDestination.toPath());
         }
-        final ReportSummary reportSummary = calculateReportSummary(parseShellCheckXml(reports));
         if (reportSummary.filesWithError > 0) {
             final String message = getMessage(reports, reportSummary);
             if (task.getIgnoreFailures()) {
@@ -73,10 +74,8 @@ public class ShellcheckInvoker {
         }
     }
 
-    private static Document parseShellCheckXml(ShellcheckReports reports) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        return dBuilder.parse(reports.getXml().getDestination());
+    private static Document parseShellCheckXml(File xmlDestination) throws ParserConfigurationException, IOException, SAXException {
+        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
     }
 
     public static String runShellcheck(File shellScripts, String format, Logger logger) throws IOException, InterruptedException {
