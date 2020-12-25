@@ -35,11 +35,11 @@ public class ShellcheckInvoker {
         }
 
         if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getShellScripts(), "tty", task.getLogger()));
+            task.getLogger().lifecycle(runShellcheck(task.getSource(), "tty", task.getLogger()));
         }
 
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", task.getLogger());
+            String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger());
             task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
             if (checkstyleFormatted.contains("No files specified.")) {
                 return;
@@ -78,20 +78,20 @@ public class ShellcheckInvoker {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
     }
 
-    public static String runShellcheck(File shellScripts, String format, Logger logger) throws IOException, InterruptedException {
+    public static String runShellcheck(File source, String format, Logger logger) throws IOException, InterruptedException {
         List<String> command = Arrays.asList(
             "docker",
             "run",
             "--rm",
             "-v",
-            shellScripts.getAbsolutePath() + ":" + shellScripts.getAbsolutePath(),
+            source.getAbsolutePath() + ":" + source.getAbsolutePath(),
             "koalaman/shellcheck-alpine:v0.7.1",
             "sh",
             "-c",
-            findCommand(shellScripts) + " | xargs shellcheck -f " + format);
+            findCommand(source) + " | xargs shellcheck -f " + format);
 
         ProcessBuilder builder = new ProcessBuilder(command)
-            .directory(shellScripts)
+            .directory(source)
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();
@@ -114,8 +114,8 @@ public class ShellcheckInvoker {
         return processOutput.toString().trim();
     }
 
-    private static String findCommand(File shellScripts) {
-        return "find " + shellScripts.getAbsolutePath() + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
+    private static String findCommand(File source) {
+        return "find " + source.getAbsolutePath() + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
     private static boolean isHtmlReportEnabledOnly(ShellcheckReports reports) {

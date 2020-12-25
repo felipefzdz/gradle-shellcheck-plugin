@@ -19,7 +19,7 @@ import java.util.List;
 
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
-    private File shellScripts;
+    private File source;
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
@@ -49,12 +49,12 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     @InputDirectory
     @PathSensitive(PathSensitivity.RELATIVE)
-    public File getShellScripts() {
-        return shellScripts;
+    public File getSource() {
+        return source;
     }
 
-    public void setShellScripts(File shellScripts) {
-        this.shellScripts = shellScripts;
+    public void setSource(File source) {
+        this.source = source;
     }
 
     /**

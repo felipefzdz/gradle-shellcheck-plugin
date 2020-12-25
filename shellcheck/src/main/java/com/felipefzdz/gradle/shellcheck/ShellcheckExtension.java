@@ -10,19 +10,19 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private final Project project;
 
-    private File shellScripts;
+    private File source;
     private boolean showViolations = true;
 
     public ShellcheckExtension(Project project) {
         this.project = project;
     }
 
-    public File getShellScripts() {
-        return shellScripts;
+    public File getSource() {
+        return source;
     }
 
-    public void setShellScripts(File shellScripts) {
-        this.shellScripts = shellScripts;
+    public void setSource(File source) {
+        this.source = source;
     }
 
     /**

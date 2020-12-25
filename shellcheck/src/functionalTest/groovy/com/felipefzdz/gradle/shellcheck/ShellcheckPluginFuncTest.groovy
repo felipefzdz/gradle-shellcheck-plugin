@@ -11,7 +11,7 @@ class ShellcheckPluginFuncTest extends Specification {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    source = file("../../src/functionalTest/resources/with_violations")
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -36,7 +36,7 @@ shellcheck {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/without_violations")
+    source = file("../../src/functionalTest/resources/without_violations")
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -49,7 +49,7 @@ shellcheck {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    source = file("../../src/functionalTest/resources/with_violations")
     isIgnoreFailures = true
 }
 """
@@ -63,7 +63,7 @@ shellcheck {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/no_shell_scripts")
+    source = file("../../src/functionalTest/resources/no_shell_scripts")
 }
 """
         def projectDir = setupProject(shellcheckBlock)
@@ -77,7 +77,7 @@ shellcheck {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    source = file("../../src/functionalTest/resources/with_violations")
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -102,7 +102,7 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
         given:
         def shellcheckBlock = """
 shellcheck {
-    shellScripts = file("../../src/functionalTest/resources/with_violations")
+    source = file("../../src/functionalTest/resources/with_violations")
 }
 """
         def projectDir = setupProject(shellcheckBlock)
