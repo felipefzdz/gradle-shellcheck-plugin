@@ -51,8 +51,9 @@ shellcheck {
 }
 ----
 
-* shellScripts - Folder where the shell scripts are located. It will search recursively matching `.sh` files.
-Future versions will enhance this functionality to allow other detection mechanisms (and to be cache incremental friendly)
+* shellScripts - Folder where the shell scripts are located. It will search recursively matching `.sh`, `.bash`,
+`.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Matching on shell scripts with no extension
+is not supported yet.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
 

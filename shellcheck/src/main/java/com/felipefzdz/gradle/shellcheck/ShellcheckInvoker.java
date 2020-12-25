@@ -88,7 +88,7 @@ public class ShellcheckInvoker {
             "koalaman/shellcheck-alpine:v0.7.1",
             "sh",
             "-c",
-            "find " + shellScripts.getAbsolutePath() + " -name '*.sh' | xargs shellcheck -f " + format);
+            findCommand(shellScripts) + " | xargs shellcheck -f " + format);
 
         ProcessBuilder builder = new ProcessBuilder(command)
             .directory(shellScripts)
@@ -112,6 +112,10 @@ public class ShellcheckInvoker {
             process.waitFor();
         }
         return processOutput.toString().trim();
+    }
+
+    private static String findCommand(File shellScripts) {
+        return "find " + shellScripts.getAbsolutePath() + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
     private static boolean isHtmlReportEnabledOnly(ShellcheckReports reports) {

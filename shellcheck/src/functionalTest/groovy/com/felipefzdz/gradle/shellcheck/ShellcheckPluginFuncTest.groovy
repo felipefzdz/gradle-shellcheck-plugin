@@ -20,9 +20,16 @@ shellcheck {
         def result = runner(projectDir).buildAndFail()
 
         then:
-        result.getOutput().contains("Shellcheck files with violations: 2")
+        result.getOutput().contains("Shellcheck files with violations: 8")
         result.getOutput().contains("Shellcheck violations by severity: 3")
-        result.getOutput().contains("SC1083") // Code that will be excluded in the next tests
+
+        def report = new File(projectDir, "build/reports/shellcheck/shellcheck.html").text
+        ["script_with_violations.bash", "script_with_violations.bash_login", "script_with_violations.bash_logout",
+         "script_with_violations.bash_profile", "script_with_violations.bashrc", "script_with_violations.ksh",
+         "script_with_violations.sh", "script_with_violations_2.sh"].each {
+            assert report.contains(it)
+        }
+        !report.contains("script_with_violations_wrong_extension.txt")
     }
 
     def "pass the build when no script in the folder has violations"() {
