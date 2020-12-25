@@ -41,6 +41,9 @@ public class ShellcheckInvoker {
         if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
             String checkstyleFormatted = runShellcheck(task.getShellScripts(), "checkstyle", task.getLogger());
             task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
+            if (checkstyleFormatted.contains("No files specified.")) {
+                return;
+            }
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
         }
 

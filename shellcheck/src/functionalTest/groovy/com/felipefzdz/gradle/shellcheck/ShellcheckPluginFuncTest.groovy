@@ -52,6 +52,19 @@ shellcheck {
         runner(projectDir).build()
     }
 
+    def "not fail when no files are specified"() {
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    shellScripts = file("../../src/functionalTest/resources/no_shell_scripts")
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
+
+        expect:
+        runner(projectDir).build()
+    }
+
     private GradleRunner runner(File projectDir) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
