@@ -1,7 +1,6 @@
 package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.GradleException;
-import org.gradle.api.logging.Logger;
 import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.w3c.dom.Document;
@@ -44,7 +43,7 @@ public class ShellcheckInvoker {
 
     }
 
-    private static void handleHtmlReport(ShellcheckReports reports, File xmlDestination){
+    private static void handleHtmlReport(ShellcheckReports reports, File xmlDestination) {
         try {
             if (reports.getHtml().isEnabled()) {
                 TransformerFactory factory = TransformerFactory.newInstance();
@@ -69,21 +68,21 @@ public class ShellcheckInvoker {
         try {
             Optional<String> maybeReport = Optional.empty();
             if (reports.getTxt().isEnabled()) {
-                maybeReport = Optional.of(runShellcheck(task.getSource(), "tty", task.getLogger(), task.getShellcheckVersion()));
+                maybeReport = Optional.of(runShellcheck(task, "tty"));
 
                 Files.writeString(txtDestination.toPath(), maybeReport.get());
             }
             if (task.isShowViolations()) {
-                task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task.getSource(), "tty", task.getLogger(), task.getShellcheckVersion())));
+                task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task, "tty")));
             }
         } catch (IOException | InterruptedException e) {
             throw new GradleException("Error while handling Shellcheck tty report", e);
         }
     }
 
-    private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination){
+    private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
-            String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger(), task.getShellcheckVersion());
+            String checkstyleFormatted = runShellcheck(task, "checkstyle");
             if (checkstyleFormatted.contains("No files specified.")) {
                 return Optional.empty();
             }
@@ -110,17 +109,18 @@ public class ShellcheckInvoker {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
     }
 
-    public static String runShellcheck(File source, String format, Logger logger, String shellcheckVersion) throws IOException, InterruptedException {
+    public static String runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
+        final File source = task.getSource();
         List<String> command = Arrays.asList(
             "docker",
             "run",
             "--rm",
             "-v",
             source.getAbsolutePath() + ":" + source.getAbsolutePath(),
-            "koalaman/shellcheck-alpine:" + shellcheckVersion,
+            "koalaman/shellcheck-alpine:" + task.getShellcheckVersion(),
             "sh",
             "-c",
-            findCommand(source) + " | xargs shellcheck -f " + format);
+            findCommand(source) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
 
         ProcessBuilder builder = new ProcessBuilder(command)
             .directory(source)
@@ -131,7 +131,7 @@ public class ShellcheckInvoker {
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
-        process.info().commandLine().ifPresent(c -> logger.debug("Docker command to run Shellcheck: " + c));
+        process.info().commandLine().ifPresent(c -> task.getLogger().debug("Docker command to run Shellcheck: " + c));
 
         StringBuilder processOutput = new StringBuilder();
 
@@ -188,8 +188,8 @@ public class ShellcheckInvoker {
     }
 
     static class ReportSummary {
-        private int filesWithError;
-        private int violationsBySeverity;
+        private final int filesWithError;
+        private final int violationsBySeverity;
 
         public ReportSummary(int filesWithError, int violationsBySeverity) {
             this.filesWithError = filesWithError;

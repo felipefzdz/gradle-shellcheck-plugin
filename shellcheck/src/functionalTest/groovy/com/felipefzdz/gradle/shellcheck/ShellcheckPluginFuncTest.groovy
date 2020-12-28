@@ -151,8 +151,26 @@ shellcheck {
         result.output.contains("shellcheck-alpine:v0.7.0")
     }
 
+    def "filtrates by severity"() {
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    source = file("../../src/functionalTest/resources/with_violations")
+    severity = "error"
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
 
-    private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
+        when:
+        def result = runner(projectDir).buildAndFail()
+
+        then:
+        result.getOutput().contains("Shellcheck files with violations: 1")
+        result.getOutput().contains("Shellcheck violations by severity: 1")
+    }
+
+
+        private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()

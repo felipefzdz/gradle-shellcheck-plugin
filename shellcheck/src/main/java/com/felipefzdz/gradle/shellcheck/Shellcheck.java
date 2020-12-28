@@ -24,8 +24,8 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private final ShellcheckReports reports;
     private boolean showViolations = true;
     private boolean ignoreFailures = false;
-
     private String shellcheckVersion;
+    private String severity;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -149,5 +149,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     @Override
     public boolean getIgnoreFailures() {
         return ignoreFailures;
+    }
+
+    @Input
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
     }
 }

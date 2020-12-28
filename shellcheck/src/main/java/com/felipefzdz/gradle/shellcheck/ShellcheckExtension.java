@@ -13,6 +13,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
     private File source;
     private boolean showViolations = true;
     private String shellcheckVersion = "v0.7.1";
+    private String severity = "style";
 
     public ShellcheckExtension(Project project) {
         this.project = project;
@@ -50,5 +51,13 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     public void setShellcheckVersion(String shellcheckVersion) {
         this.shellcheckVersion = shellcheckVersion;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
     }
 }

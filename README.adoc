@@ -49,6 +49,7 @@ shellcheck {
     isIgnoreFailures = true
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
+    serverity = "error"
 }
 ----
 
@@ -58,6 +59,7 @@ is not supported yet.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
 * shellcheckVersion - By default "v0.7.1"
+* severity - Minimum severity of errors to consider (error, warning, info, style). Defaults to `style`.
 
 [[sec:shellcheck_customize_xsl]]
 == Customizing the HTML report
