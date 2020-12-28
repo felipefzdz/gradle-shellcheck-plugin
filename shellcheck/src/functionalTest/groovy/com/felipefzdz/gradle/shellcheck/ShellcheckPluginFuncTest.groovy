@@ -7,6 +7,10 @@ import java.nio.file.Files
 
 class ShellcheckPluginFuncTest extends Specification {
 
+    def setupSpec() {
+        ["docker", "image", "rm", "koalaman/shellcheck-alpine:v0.7.1"].execute().waitForProcessOutput()
+    }
+
     def "fail the build when some scripts in the folder have violations"() {
         given:
         def shellcheckBlock = """
@@ -170,7 +174,7 @@ shellcheck {
     }
 
 
-        private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
+    private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()

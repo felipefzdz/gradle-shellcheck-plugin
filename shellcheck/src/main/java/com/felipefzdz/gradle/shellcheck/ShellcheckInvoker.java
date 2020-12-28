@@ -82,11 +82,12 @@ public class ShellcheckInvoker {
 
     private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
-            String checkstyleFormatted = runShellcheck(task, "checkstyle");
-            if (checkstyleFormatted.contains("No files specified.")) {
+            final String rawOutput = runShellcheck(task, "checkstyle").toString().trim();
+            if (rawOutput.contains("No files specified.")) {
                 return Optional.empty();
             }
-            assertValidXml(checkstyleFormatted);
+            assertContainsXml(rawOutput);
+            String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
             task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
             Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
             return Optional.of(parseShellCheckXml(xmlDestination));
@@ -99,8 +100,8 @@ public class ShellcheckInvoker {
         return report.isEnabled() ? report.getDestination() : new File(task.getTemporaryDir(), report.getDestination().getName());
     }
 
-    private static void assertValidXml(String potentialXml) {
-        if (!potentialXml.startsWith("<?xml version")) {
+    private static void assertContainsXml(String potentialXml) {
+        if (!potentialXml.contains("<?xml version")) {
             throw new GradleException(String.format("Error while executing shellcheck: %s", potentialXml));
         }
     }
