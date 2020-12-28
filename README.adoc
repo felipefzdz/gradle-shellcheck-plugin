@@ -21,22 +21,14 @@ The plugin adds a task to the project called `shellcheck` that performs the qual
 Note that in order to be portable and repeatable Shellcheck will run:
 
 * Through a Docker container
-* A not-yet-configurable Shellcheck version, hardcoded at v0.7.1.
+* A configurable Shellcheck version
 
 This implies that no dependencies are required on the executing machine, except for Docker itself.
 
 [[sec:shellcheck_tasks]]
 == Tasks
 
-The Shellcheck plugin adds the following task to the project:
-
-`shellcheck`
-
-+
-Runs Shellcheck against the provided Shell source files.
-
-
-See the link:{groovyDslPath}/org.gradle.api.plugins.quality.ShellcheckExtension.html[ShellcheckExtension] class in the API documentation.
+The Shellcheck plugin a task called `shellcheck` to the project.
 
 
 [[sec:shellcheck_extension]]
@@ -49,7 +41,7 @@ shellcheck {
     isIgnoreFailures = true
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
-    serverity = "error"
+    severity = "error"
 }
 ----
 
