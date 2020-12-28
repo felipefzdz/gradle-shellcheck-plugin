@@ -98,7 +98,6 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
     }
 
     def "generate html and xml reports by default"() {
-
         given:
         def shellcheckBlock = """
 shellcheck {
@@ -115,11 +114,50 @@ shellcheck {
         new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
     }
 
-    private GradleRunner runner(File projectDir) {
+    def "provide proper error message when failing for reasons unrelated to shellcheck itself"() {
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    source = file("../../src/functionalTest/resources/with_violations")
+    shellcheckVersion = "vvvvv0.7.1"
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
+
+        when:
+        def result = runner(projectDir).buildAndFail()
+
+        then:
+        result.output.contains("Unable to find image")
+    }
+
+    def "run with configured shellcheck version"() {
+        given:
+        def shellcheckBlock = """
+shellcheck {
+    source = file("../../src/functionalTest/resources/with_violations")
+    shellcheckVersion = "v0.7.0"
+}
+"""
+        def projectDir = setupProject(shellcheckBlock)
+
+        when:
+        def result = runner(projectDir, true).buildAndFail()
+
+        then:
+        result.output.contains("shellcheck-alpine:v0.7.0")
+    }
+
+
+    private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
         GradleRunner runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("shellcheck", "--stacktrace")
+        if (withDebugLogging) {
+            runner.withArguments("shellcheck", "--stacktrace", "--debug")
+        } else {
+            runner.withArguments("shellcheck", "--stacktrace")
+        }
         runner.withProjectDir(projectDir)
         runner.withDebug(true)
         runner

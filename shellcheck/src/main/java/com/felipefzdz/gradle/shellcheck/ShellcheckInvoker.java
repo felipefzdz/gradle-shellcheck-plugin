@@ -9,7 +9,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Source;
@@ -20,7 +19,10 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ShellcheckInvoker {
 
@@ -34,17 +36,19 @@ public class ShellcheckInvoker {
             xmlDestination = new File(task.getTemporaryDir(), reports.getXml().getDestination().getName());
         }
 
-        if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getSource(), "tty", task.getLogger()));
-        }
+        String shellcheckVersion = task.getShellcheckVersion();
 
-        if (reports.getXml().isEnabled() || reports.getHtml().isEnabled()) {
-            String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger());
-            task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
-            if (checkstyleFormatted.contains("No files specified.")) {
-                return;
-            }
-            Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
+
+        String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger(), shellcheckVersion);
+        if (checkstyleFormatted.contains("No files specified.")) {
+            return;
+        }
+        assertValidXml(checkstyleFormatted);
+        task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
+        Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
+
+        if (task.isShowViolations()) {
+            task.getLogger().lifecycle(runShellcheck(task.getSource(), "tty", task.getLogger(), shellcheckVersion));
         }
 
         if (reports.getHtml().isEnabled()) {
@@ -74,18 +78,24 @@ public class ShellcheckInvoker {
         }
     }
 
+    private static void assertValidXml(String potentialXml) {
+        if (!potentialXml.startsWith("<?xml version")) {
+            throw new GradleException(String.format("Error while executing shellcheck: %s", potentialXml));
+        }
+    }
+
     private static Document parseShellCheckXml(File xmlDestination) throws ParserConfigurationException, IOException, SAXException {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
     }
 
-    public static String runShellcheck(File source, String format, Logger logger) throws IOException, InterruptedException {
+    public static String runShellcheck(File source, String format, Logger logger, String shellcheckVersion) throws IOException, InterruptedException {
         List<String> command = Arrays.asList(
             "docker",
             "run",
             "--rm",
             "-v",
             source.getAbsolutePath() + ":" + source.getAbsolutePath(),
-            "koalaman/shellcheck-alpine:v0.7.1",
+            "koalaman/shellcheck-alpine:" + shellcheckVersion,
             "sh",
             "-c",
             findCommand(source) + " | xargs shellcheck -f " + format);

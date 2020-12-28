@@ -15,7 +15,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
@@ -23,6 +22,8 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
+
+    private String shellcheckVersion;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -126,9 +127,19 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     /**
      * Whether rule violations are to be displayed on the console.
+     *
      * @param showViolations
      */
     public void setShowViolations(boolean showViolations) {
         this.showViolations = showViolations;
+    }
+
+    @Input
+    public String getShellcheckVersion() {
+        return shellcheckVersion;
+    }
+
+    public void setShellcheckVersion(String shellcheckVersion) {
+        this.shellcheckVersion = shellcheckVersion;
     }
 }
