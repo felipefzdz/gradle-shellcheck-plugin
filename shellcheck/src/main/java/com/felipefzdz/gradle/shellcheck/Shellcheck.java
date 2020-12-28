@@ -16,6 +16,7 @@ import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.IOException;
 
+@CacheableTask
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
     private File source;
