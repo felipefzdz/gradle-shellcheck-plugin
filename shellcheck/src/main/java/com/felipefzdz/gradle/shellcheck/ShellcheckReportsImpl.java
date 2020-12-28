@@ -19,6 +19,7 @@ public class ShellcheckReportsImpl extends TaskReportContainer<SingleFileReport>
 
         add(CustomizableHtmlReportImpl.class, "html", task);
         add(TaskGeneratedSingleFileReport.class, "xml", task);
+        add(TaskGeneratedSingleFileReport.class, "txt", task);
     }
 
     @Override
@@ -29,5 +30,10 @@ public class ShellcheckReportsImpl extends TaskReportContainer<SingleFileReport>
     @Override
     public SingleFileReport getXml() {
         return getByName("xml");
+    }
+
+    @Override
+    public SingleFileReport getTxt() {
+        return getByName("txt");
     }
 }

@@ -19,63 +19,85 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ShellcheckInvoker {
 
     private static final String SHELLCHECK_NOFRAMES_SORTED_XSL = "shellcheck-noframes-sorted.xsl";
 
-    public static void invoke(Shellcheck task) throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
+    public static void invoke(Shellcheck task) {
         final ShellcheckReports reports = task.getReports();
-        File xmlDestination = reports.getXml().getDestination();
+        final File xmlDestination = calculateReportDestination(task, reports.getXml());
 
-        if (isHtmlReportEnabledOnly(reports)) {
-            xmlDestination = new File(task.getTemporaryDir(), reports.getXml().getDestination().getName());
-        }
+        handleCheckstyleReport(task, xmlDestination).ifPresent(parsedReport -> {
+            handleTtyReport(task, reports, calculateReportDestination(task, reports.getTxt()));
+            handleHtmlReport(reports, xmlDestination);
+            calculateReportSummary(parsedReport).ifPresent(reportSummary -> {
+                final String message = getMessage(reports, reportSummary);
+                if (task.getIgnoreFailures()) {
+                    task.getLogger().warn(message);
+                } else {
+                    throw new GradleException(message);
+                }
+            });
+        });
 
-        String shellcheckVersion = task.getShellcheckVersion();
+    }
 
+    private static void handleHtmlReport(ShellcheckReports reports, File xmlDestination){
+        try {
+            if (reports.getHtml().isEnabled()) {
+                TransformerFactory factory = TransformerFactory.newInstance();
+                InputStream stylesheet = reports.getHtml().getStylesheet() != null ?
+                    new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
+                    ShellcheckInvoker.class.getClassLoader().getResourceAsStream(SHELLCHECK_NOFRAMES_SORTED_XSL);
+                Source xslt = new StreamSource(stylesheet);
+                Transformer transformer = factory.newTransformer(xslt);
 
-        String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger(), shellcheckVersion);
-        if (checkstyleFormatted.contains("No files specified.")) {
-            return;
-        }
-        assertValidXml(checkstyleFormatted);
-        task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
-        Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
-
-        if (task.isShowViolations()) {
-            task.getLogger().lifecycle(runShellcheck(task.getSource(), "tty", task.getLogger(), shellcheckVersion));
-        }
-
-        if (reports.getHtml().isEnabled()) {
-            TransformerFactory factory = TransformerFactory.newInstance();
-            InputStream stylesheet = reports.getHtml().getStylesheet() != null ?
-                new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
-                ShellcheckInvoker.class.getClassLoader().getResourceAsStream(SHELLCHECK_NOFRAMES_SORTED_XSL);
-            Source xslt = new StreamSource(stylesheet);
-            Transformer transformer = factory.newTransformer(xslt);
-
-            Source text = new StreamSource(xmlDestination);
-            transformer.transform(text, new StreamResult(reports.getHtml().getDestination()));
-        }
-
-        final ReportSummary reportSummary = calculateReportSummary(parseShellCheckXml(xmlDestination));
-
-        if (isHtmlReportEnabledOnly(reports)) {
-            Files.deleteIfExists(xmlDestination.toPath());
-        }
-        if (reportSummary.filesWithError > 0) {
-            final String message = getMessage(reports, reportSummary);
-            if (task.getIgnoreFailures()) {
-                task.getLogger().warn(message);
-            } else {
-                throw new GradleException(message);
+                Source text = new StreamSource(xmlDestination);
+                transformer.transform(text, new StreamResult(reports.getHtml().getDestination()));
             }
+            if (!reports.getXml().isEnabled()) {
+                Files.deleteIfExists(xmlDestination.toPath());
+            }
+        } catch (TransformerException | IOException e) {
+            throw new GradleException("Error while handling Shellcheck html report", e);
         }
+    }
+
+    private static void handleTtyReport(Shellcheck task, ShellcheckReports reports, File txtDestination) {
+        try {
+            Optional<String> maybeReport = Optional.empty();
+            if (reports.getTxt().isEnabled()) {
+                maybeReport = Optional.of(runShellcheck(task.getSource(), "tty", task.getLogger(), task.getShellcheckVersion()));
+
+                Files.writeString(txtDestination.toPath(), maybeReport.get());
+            }
+            if (task.isShowViolations()) {
+                task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task.getSource(), "tty", task.getLogger(), task.getShellcheckVersion())));
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new GradleException("Error while handling Shellcheck tty report", e);
+        }
+    }
+
+    private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination){
+        try {
+            String checkstyleFormatted = runShellcheck(task.getSource(), "checkstyle", task.getLogger(), task.getShellcheckVersion());
+            if (checkstyleFormatted.contains("No files specified.")) {
+                return Optional.empty();
+            }
+            assertValidXml(checkstyleFormatted);
+            task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
+            Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
+            return Optional.of(parseShellCheckXml(xmlDestination));
+        } catch (IOException | InterruptedException | ParserConfigurationException | SAXException e) {
+            throw new GradleException("Error while handling Shellcheck checkstyle report", e);
+        }
+    }
+
+    private static File calculateReportDestination(Shellcheck task, SingleFileReport report) {
+        return report.isEnabled() ? report.getDestination() : new File(task.getTemporaryDir(), report.getDestination().getName());
     }
 
     private static void assertValidXml(String potentialXml) {
@@ -114,7 +136,7 @@ public class ShellcheckInvoker {
         StringBuilder processOutput = new StringBuilder();
 
         try (BufferedReader processOutputReader = new BufferedReader(
-            new InputStreamReader(process.getInputStream()));) {
+            new InputStreamReader(process.getInputStream()))) {
             String readLine;
             while ((readLine = processOutputReader.readLine()) != null) {
                 processOutput.append(readLine).append(System.lineSeparator());
@@ -128,15 +150,11 @@ public class ShellcheckInvoker {
         return "find " + source.getAbsolutePath() + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
-    private static boolean isHtmlReportEnabledOnly(ShellcheckReports reports) {
-        return !reports.getXml().isEnabled() && reports.getHtml().isEnabled();
-    }
-
     private static String getMessage(ShellcheckReports reports, ReportSummary reportSummary) {
         return "Shellcheck violations were found." + getReportUrlMessage(reports) + "" + getViolationMessage(reportSummary);
     }
 
-    private static ReportSummary calculateReportSummary(Document reportXml) {
+    private static Optional<ReportSummary> calculateReportSummary(Document reportXml) {
         NodeList fileNodes = reportXml.getDocumentElement().getChildNodes();
         Set<String> filesWithError = new HashSet<>();
         Set<String> violationsBySeverityCount = new HashSet<>();
@@ -155,7 +173,7 @@ public class ShellcheckInvoker {
                 }
             }
         }
-        return new ReportSummary(filesWithError.size(), violationsBySeverityCount.size());
+        return filesWithError.size() > 0 ? Optional.of(new ReportSummary(filesWithError.size(), violationsBySeverityCount.size())) : Optional.empty();
     }
 
     private static String getReportUrlMessage(ShellcheckReports reports) {

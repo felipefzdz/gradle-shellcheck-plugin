@@ -30,4 +30,13 @@ public interface ShellcheckReports extends ReportContainer<SingleFileReport> {
      */
     @Internal
     SingleFileReport getXml();
+
+    /**
+     * The shellcheck TTY report
+     * This report IS enabled by default.
+     *
+     * @return The shellcheck TTY report
+     */
+    @Internal
+    SingleFileReport getTxt();
 }

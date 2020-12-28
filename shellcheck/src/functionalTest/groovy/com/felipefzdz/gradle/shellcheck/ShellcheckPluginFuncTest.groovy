@@ -83,6 +83,7 @@ shellcheck {
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
     reports {
         xml.isEnabled = false
+        txt.isEnabled = false
         html.isEnabled = true
     }
 }
@@ -95,9 +96,10 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
         then:
         new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
         !new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
+        !new File(projectDir, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
-    def "generate html and xml reports by default"() {
+    def "generate html, xml and txt reports by default"() {
         given:
         def shellcheckBlock = """
 shellcheck {
@@ -112,6 +114,7 @@ shellcheck {
         then:
         new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
         new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
+        new File(projectDir, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
     def "provide proper error message when failing for reasons unrelated to shellcheck itself"() {
