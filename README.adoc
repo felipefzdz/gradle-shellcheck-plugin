@@ -46,7 +46,7 @@ See the link:{groovyDslPath}/org.gradle.api.plugins.quality.ShellcheckExtension.
 ----
 shellcheck {
     source = file("src/shellScripts")
-    ignoreFailures = true
+    isIgnoreFailures = true
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
 }
@@ -55,7 +55,7 @@ shellcheck {
 * source - Folder where the shell scripts are located. It will search recursively matching `.sh`, `.bash`,
 `.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Matching on shell scripts with no extension
 is not supported yet.
-* ignoreFailures - Whether to allow the build to continue if there are warnings.
+* isIgnoreFailures - Whether to allow the build to continue if there are warnings.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
 * shellcheckVersion - By default "v0.7.1"
 

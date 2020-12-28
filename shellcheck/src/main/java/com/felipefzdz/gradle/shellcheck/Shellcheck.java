@@ -22,6 +22,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
+    private boolean ignoreFailures = false;
 
     private String shellcheckVersion;
 
@@ -37,15 +38,6 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     @TaskAction
     public void run() throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
         ShellcheckInvoker.invoke(this);
-    }
-
-    @Override
-    public void setIgnoreFailures(boolean ignoreFailures) {
-    }
-
-    @Override
-    public boolean getIgnoreFailures() {
-        return false;
     }
 
     @InputDirectory
@@ -141,5 +133,20 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     public void setShellcheckVersion(String shellcheckVersion) {
         this.shellcheckVersion = shellcheckVersion;
+    }
+
+    @Override
+    public void setIgnoreFailures(boolean ignoreFailures) {
+        this.ignoreFailures = ignoreFailures;
+    }
+
+    @Internal
+    public boolean isIgnoreFailures() {
+        return ignoreFailures;
+    }
+
+    @Override
+    public boolean getIgnoreFailures() {
+        return ignoreFailures;
     }
 }
