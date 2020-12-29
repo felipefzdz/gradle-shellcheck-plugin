@@ -2,6 +2,7 @@ package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
@@ -12,8 +13,11 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.reporting.ReportingExtension;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static org.gradle.api.internal.lambdas.SerializableLambdas.action;
 
 public class ShellcheckPlugin implements Plugin<Project> {
@@ -34,13 +38,19 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("source", (Callable<File>) () -> extension.getSource());
+        taskMapping.map("scripts", (Callable<ConfigurableFileCollection>) () -> filterShellScripts(project));
+        taskMapping.map("sources", (Callable<List<String>>) () -> extension.getSources().stream().map(File::getAbsolutePath).collect(toList()));
         taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
         taskMapping.map("shellcheckVersion", (Callable<String>) () -> extension.getShellcheckVersion());
         taskMapping.map("severity", (Callable<String>) () -> extension.getSeverity());
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file("shellcheck"));
+    }
+
+    private ConfigurableFileCollection filterShellScripts(Project project) {
+        final List<String> shellExtensions = Stream.of("sh", "bash", "ksh", "bashrc", "bash_profile", "bash_login", "bash_logout").map(extension -> String.format("**/*.%s", extension)).collect(toList());
+        return project.files(project.files(extension.getSources()).getAsFileTree().matching(pattern -> pattern.include(shellExtensions)).getFiles());
     }
 
     private void configureReportsConventionMapping(Shellcheck task, Project project) {
