@@ -14,6 +14,7 @@ import org.xml.sax.SAXException;
 import javax.inject.Inject;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -21,7 +22,7 @@ import java.util.List;
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
     private ConfigurableFileCollection scripts;
-    private List<String> sources;
+    private List<File> sources;
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
@@ -54,11 +55,11 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     }
 
     @Internal
-    public List<String> getSources() {
+    public List<File> getSources() {
         return sources;
     }
 
-    public void setSources(List<String> sources) {
+    public void setSources(List<File> sources) {
         this.sources = sources;
     }
 
