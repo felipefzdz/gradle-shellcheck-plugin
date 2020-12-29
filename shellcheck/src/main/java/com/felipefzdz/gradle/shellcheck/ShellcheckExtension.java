@@ -10,7 +10,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private final Project project;
 
-    private List<File> sources;
+    private File source;
     private boolean showViolations = true;
     private String shellcheckVersion = "v0.7.1";
     private String severity = "style";
@@ -19,12 +19,12 @@ public class ShellcheckExtension extends CodeQualityExtension {
         this.project = project;
     }
 
-    public List<File> getSources() {
-        return sources;
+    public File getSource() {
+        return source;
     }
 
-    public void setSources(List<File> sources) {
-        this.sources = sources;
+    public void setSource(File source) {
+        this.source = source;
     }
 
     /**
