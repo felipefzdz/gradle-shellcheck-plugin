@@ -120,7 +120,7 @@ public class ShellcheckInvoker {
         command.add("run");
         command.add("--rm");
 
-        final List<String> volumes = task.getSources().stream().map(File::getAbsolutePath).map(folder -> folder + ":" + folder).collect(toList());
+        final List<String> volumes = task.getSources().stream().map(folder -> folder + ":" + folder).collect(toList());
         volumes.forEach(volume -> {
             command.add("-v");
             command.add(volume);

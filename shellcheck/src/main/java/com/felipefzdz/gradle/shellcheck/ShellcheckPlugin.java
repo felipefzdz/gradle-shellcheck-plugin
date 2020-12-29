@@ -39,7 +39,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("scripts", (Callable<ConfigurableFileCollection>) () -> filterShellScripts(project));
-        taskMapping.map("sources", (Callable<List<File>>) () -> extension.getSources());
+        taskMapping.map("sources", (Callable<List<String>>) () -> extension.getSources().stream().map(File::getAbsolutePath).collect(toList()));
         taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
         taskMapping.map("shellcheckVersion", (Callable<String>) () -> extension.getShellcheckVersion());
