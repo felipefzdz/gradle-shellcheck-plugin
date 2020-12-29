@@ -50,13 +50,13 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         return scripts;
     }
 
-    public void setScripts(ConfigurableFileCollection scripts) {
-        this.scripts = scripts;
-    }
-
     @Internal
     public List<File> getSources() {
         return sources;
+    }
+
+    public void setSources(List<File> sources) {
+        this.sources = sources;
     }
 
     /**
