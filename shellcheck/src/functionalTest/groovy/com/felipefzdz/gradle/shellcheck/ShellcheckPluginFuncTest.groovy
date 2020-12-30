@@ -1,11 +1,29 @@
 package com.felipefzdz.gradle.shellcheck
 
+import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.GradleRunner
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
-import java.nio.file.Files
-
 class ShellcheckPluginFuncTest extends Specification {
+
+    @Rule
+    TemporaryFolder testProjectDir = new TemporaryFolder()
+
+    File buildFile
+    File resources
+
+    def setup() {
+        buildFile = testProjectDir.newFile('build.gradle.kts')
+        buildFile << """
+plugins {
+    id("com.felipefzdz.gradle.shellcheck")
+}
+        """
+        FileUtils.copyDirectory(new File("build/resources"), testProjectDir.root)
+        resources = new File(testProjectDir.root, "functionalTest")
+    }
 
     def setupSpec() {
         ["docker", "image", "rm", "koalaman/shellcheck-alpine:v0.7.1"].execute().waitForProcessOutput()
@@ -13,21 +31,20 @@ class ShellcheckPluginFuncTest extends Specification {
 
     def "fail the build when some scripts in the folder have violations"() {
         given:
-        def shellcheckBlock = """
+        buildFile <<"""
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         when:
-        def result = runner(projectDir).buildAndFail()
+        def result = runner().buildAndFail()
 
         then:
         result.getOutput().contains("Shellcheck files with violations: 8")
         result.getOutput().contains("Shellcheck violations by severity: 3")
 
-        def report = new File(projectDir, "build/reports/shellcheck/shellcheck.html").text
+        def report = new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.html").text
         ["script_with_violations.bash", "script_with_violations.bash_login", "script_with_violations.bash_logout",
          "script_with_violations.bash_profile", "script_with_violations.bashrc", "script_with_violations.ksh",
          "script_with_violations.sh", "script_with_violations_2.sh"].each {
@@ -38,50 +55,47 @@ shellcheck {
 
     def "pass the build when no script in the folder has violations"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/without_violations")
+    source = file("${resources.absolutePath}/without_violations")
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         expect:
-        runner(projectDir).build()
+        runner().build()
     }
 
     def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
     isIgnoreFailures = true
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         expect:
-        runner(projectDir).build()
+        runner().build()
     }
 
     def "not fail when no files are specified"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/no_shell_scripts")
+    source = file("${resources.absolutePath}/no_shell_scripts")
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         expect:
-        runner(projectDir).build()
+        runner().build()
     }
 
     def "only generate html reports"() {
 
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -92,47 +106,43 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
     }
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
-
         when:
-        runner(projectDir).buildAndFail()
+        runner().buildAndFail()
 
         then:
-        new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
-        !new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
-        !new File(projectDir, "build/reports/shellcheck/shellcheck.txt").exists()
+        new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.html").exists()
+        !new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.xml").exists()
+        !new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
     def "generate html, xml and txt reports by default"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         when:
-        runner(projectDir).buildAndFail()
+        runner().buildAndFail()
 
         then:
-        new File(projectDir, "build/reports/shellcheck/shellcheck.html").exists()
-        new File(projectDir, "build/reports/shellcheck/shellcheck.xml").exists()
-        new File(projectDir, "build/reports/shellcheck/shellcheck.txt").exists()
+        new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.html").exists()
+        new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.xml").exists()
+        new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
     def "provide proper error message when failing for reasons unrelated to shellcheck itself"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
     shellcheckVersion = "vvvvv0.7.1"
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         when:
-        def result = runner(projectDir).buildAndFail()
+        def result = runner().buildAndFail()
 
         then:
         result.output.contains("Unable to find image")
@@ -140,16 +150,15 @@ shellcheck {
 
     def "run with configured shellcheck version"() {
         given:
-        def shellcheckBlock = """
+        buildFile << """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
     shellcheckVersion = "v0.7.0"
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         when:
-        def result = runner(projectDir, true).buildAndFail()
+        def result = runner(true).buildAndFail()
 
         then:
         result.output.contains("shellcheck-alpine:v0.7.0")
@@ -157,16 +166,15 @@ shellcheck {
 
     def "filtrates by severity"() {
         given:
-        def shellcheckBlock = """
+        buildFile <<  """
 shellcheck {
-    source = file("../../src/functionalTest/resources/with_violations")
+    source = file("${resources.absolutePath}/with_violations")
     severity = "error"
 }
 """
-        def projectDir = setupProject(shellcheckBlock)
 
         when:
-        def result = runner(projectDir).buildAndFail()
+        def result = runner().buildAndFail()
 
         then:
         result.getOutput().contains("Shellcheck files with violations: 1")
@@ -174,34 +182,13 @@ shellcheck {
     }
 
 
-    private GradleRunner runner(File projectDir, boolean withDebugLogging = false) {
-        GradleRunner runner = GradleRunner.create()
-        runner.forwardOutput()
-        runner.withPluginClasspath()
-        if (withDebugLogging) {
-            runner.withArguments("shellcheck", "--stacktrace", "--debug")
-        } else {
-            runner.withArguments("shellcheck", "--stacktrace")
-        }
-        runner.withProjectDir(projectDir)
-        runner.withDebug(true)
-        runner
-    }
-
-    private File setupProject(String shellcheckBlock) {
-        File projectDir = new File("build/functionalTest")
-        projectDir.deleteDir()
-        Files.createDirectories(projectDir.toPath())
-        new File(projectDir, "settings.gradle.kts") << ""
-        def buildFile = new File(projectDir, "build.gradle.kts")
-        buildFile.text = ''
-        buildFile <<
-            """
-plugins {
-    id("com.felipefzdz.gradle.shellcheck")
-}
-${shellcheckBlock}
-"""
-        projectDir
+    private GradleRunner runner(boolean withDebugLogging = false) {
+        def arguments = withDebugLogging ? ["shellcheck", "--stacktrace", "--debug"] : ["shellcheck", "--stacktrace"]
+        GradleRunner.create()
+            .forwardOutput()
+            .withPluginClasspath()
+            .withArguments(arguments)
+            .withProjectDir(testProjectDir.root)
+            .withDebug(true)
     }
 }

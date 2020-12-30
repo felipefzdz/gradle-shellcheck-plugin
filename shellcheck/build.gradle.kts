@@ -15,6 +15,7 @@ repositories {
 dependencies {
     implementation("org.codehaus.groovy:groovy:2.5.12")
     testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
+    testImplementation("commons-io:commons-io:2.8.0")
 }
 
 gradlePlugin {
