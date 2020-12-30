@@ -33,20 +33,22 @@ pluginBundle {
     tags = listOf("shellcheck", "code-quality")
 }
 
-// Add a source set for the functional test suite
 val functionalTestSourceSet = sourceSets.create("functionalTest") {
 }
 
 gradlePlugin.testSourceSets(functionalTestSourceSet)
 configurations["functionalTestImplementation"].extendsFrom(configurations["testImplementation"])
 
-// Add a task to run the functional tests
 val functionalTest by tasks.registering(Test::class) {
     testClassesDirs = functionalTestSourceSet.output.classesDirs
     classpath = functionalTestSourceSet.runtimeClasspath
 }
 
 tasks.check {
-    // Run the functional tests as part of `check`
     dependsOn(functionalTest)
+}
+
+val validateTaskPropertiesTask = tasks.named("validateTaskProperties")
+tasks.named("publishPlugins").configure {
+    dependsOn(validateTaskPropertiesTask, functionalTest)
 }
