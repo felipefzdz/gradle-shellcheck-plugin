@@ -2,6 +2,7 @@ package com.felipefzdz.gradle.shellcheck
 
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
@@ -13,11 +14,21 @@ class ShellcheckPluginFuncTest extends Specification {
 
     File buildFile
     File resources
+    File localBuildCacheDirectory
 
     def setup() {
+        localBuildCacheDirectory = testProjectDir.newFolder('local-cache')
+        testProjectDir.newFile('settings.gradle') << """
+        buildCache {
+            local {
+                directory '${localBuildCacheDirectory.toURI()}'
+            }
+        }
+    """
         buildFile = testProjectDir.newFile('build.gradle.kts')
         buildFile << """
 plugins {
+    id("base")
     id("com.felipefzdz.gradle.shellcheck")
 }
         """
@@ -63,6 +74,27 @@ shellcheck {
 
         expect:
         runner().build()
+    }
+
+    def "ensure cacheability"() {
+        given:
+        buildFile << """
+shellcheck {
+    source = file("${resources.absolutePath}/without_violations")
+}
+"""
+
+        expect:
+        runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.SUCCESS
+
+        and:
+        runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.FROM_CACHE
+
+        when:
+        new File("${resources.absolutePath}/without_violations/script_without_violations.sh") << "ls /"
+
+        then:
+        runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.SUCCESS
     }
 
     def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
@@ -158,10 +190,18 @@ shellcheck {
 """
 
         when:
-        def result = runner(true).buildAndFail()
+        def result = runnerWithDebugLogging().buildAndFail()
 
         then:
         result.output.contains("shellcheck-alpine:v0.7.0")
+    }
+
+    private GradleRunner runnerWithDebugLogging() {
+        runner(true)
+    }
+
+    private GradleRunner runnerWithBuildCache() {
+        runner(false, true)
     }
 
     def "filtrates by severity"() {
@@ -182,8 +222,15 @@ shellcheck {
     }
 
 
-    private GradleRunner runner(boolean withDebugLogging = false) {
-        def arguments = withDebugLogging ? ["shellcheck", "--stacktrace", "--debug"] : ["shellcheck", "--stacktrace"]
+    private GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false) {
+        def arguments = ["shellcheck", "--stacktrace"]
+        if (withDebugLogging) {
+            arguments << "--debug"
+        }
+        if (withBuildCache) {
+            arguments.add(0, "clean")
+            arguments << "--build-cache"
+        }
         GradleRunner.create()
             .forwardOutput()
             .withPluginClasspath()
