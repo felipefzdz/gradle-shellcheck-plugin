@@ -27,6 +27,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private boolean ignoreFailures = false;
     private String shellcheckVersion;
     private String severity;
+    private File projectDir;
 
     public Shellcheck() {
         this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -159,5 +160,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     public void setSeverity(String severity) {
         this.severity = severity;
+    }
+
+    @Internal
+    public File getProjectDir() {
+        return projectDir;
+    }
+
+    public void setProjectDir(File projectDir) {
+        this.projectDir = projectDir;
     }
 }

@@ -132,7 +132,7 @@ public class ShellcheckInvoker {
         command.add(findCommand(sources) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
 
         ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(task.getProject().getProjectDir())
+                .directory(task.getProjectDir())
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();

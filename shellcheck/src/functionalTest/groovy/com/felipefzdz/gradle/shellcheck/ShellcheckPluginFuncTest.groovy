@@ -216,6 +216,10 @@ shellcheck {
         runner(false, true)
     }
 
+    private GradleRunner runnerWithConfigurationCache() {
+        runner(false, false, true)
+    }
+
     def "filtrates by severity"() {
         given:
         buildFile <<  """
@@ -233,8 +237,26 @@ shellcheck {
         result.getOutput().contains("Shellcheck violations by severity: 1")
     }
 
+    def "shellcheck task can be loaded from the configuration cache"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
+}
+"""
 
-    private GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false) {
+        when:
+        runnerWithConfigurationCache().build()
+
+        and:
+        def result = runnerWithConfigurationCache().build()
+
+        then:
+        result.output.contains('Reusing configuration cache.')
+    }
+
+
+    private GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false, boolean withConfigurationCache = false) {
         def arguments = ["shellcheck", "--stacktrace"]
         if (withDebugLogging) {
             arguments << "--debug"
@@ -243,11 +265,18 @@ shellcheck {
             arguments.add(0, "clean")
             arguments << "--build-cache"
         }
-        GradleRunner.create()
+        if(withConfigurationCache) {
+            arguments << "--configuration-cache"
+        }
+        def runner = GradleRunner.create()
             .forwardOutput()
             .withPluginClasspath()
             .withArguments(arguments)
             .withProjectDir(testProjectDir.root)
-            .withDebug(true)
+        // https://github.com/gradle/gradle/issues/14125
+        if (!withConfigurationCache) {
+            runner.withDebug(true)
+        }
+        runner
     }
 }
