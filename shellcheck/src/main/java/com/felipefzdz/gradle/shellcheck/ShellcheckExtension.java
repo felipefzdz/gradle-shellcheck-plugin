@@ -1,6 +1,7 @@
 package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.quality.CodeQualityExtension;
 
 import java.io.File;
@@ -10,7 +11,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     private final Project project;
 
-    private File source;
+    private FileCollection sources;
     private boolean showViolations = true;
     private String shellcheckVersion = "v0.7.1";
     private String severity = "style";
@@ -19,12 +20,12 @@ public class ShellcheckExtension extends CodeQualityExtension {
         this.project = project;
     }
 
-    public File getSource() {
-        return source;
+    public FileCollection getSources() {
+        return sources;
     }
 
-    public void setSource(File source) {
-        this.source = source;
+    public void setSources(FileCollection sources) {
+        this.sources = sources;
     }
 
     /**

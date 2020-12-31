@@ -2,6 +2,7 @@ package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
@@ -34,7 +35,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("source", (Callable<File>) () -> extension.getSource());
+        taskMapping.map("sources", (Callable<FileCollection>) () -> extension.getSources());
         taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
         taskMapping.map("shellcheckVersion", (Callable<String>) () -> extension.getShellcheckVersion());

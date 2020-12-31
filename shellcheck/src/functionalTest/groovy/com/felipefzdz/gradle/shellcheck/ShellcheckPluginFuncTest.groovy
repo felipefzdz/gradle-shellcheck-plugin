@@ -44,7 +44,7 @@ plugins {
         given:
         buildFile <<"""
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
 }
 """
 
@@ -68,7 +68,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/without_violations")
+    sources = files("${resources.absolutePath}/without_violations")
 }
 """
 
@@ -80,7 +80,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/without_violations")
+    sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
 }
 """
 
@@ -95,13 +95,25 @@ shellcheck {
 
         then:
         runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.SUCCESS
+
+        and:
+        runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.FROM_CACHE
+
+        when:
+        new File("${resources.absolutePath}/another_without_violations/another_script_without_violations.sh") << """#!/usr/bin/env bash
+
+ls /etc
+"""
+
+        then:
+        runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.SUCCESS
     }
 
     def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
     isIgnoreFailures = true
 }
 """
@@ -114,7 +126,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/no_shell_scripts")
+    sources = files("${resources.absolutePath}/no_shell_scripts")
 }
 """
 
@@ -127,7 +139,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -151,7 +163,7 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
 }
 """
 
@@ -168,7 +180,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
     shellcheckVersion = "vvvvv0.7.1"
 }
 """
@@ -184,7 +196,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
     shellcheckVersion = "v0.7.0"
 }
 """
@@ -208,7 +220,7 @@ shellcheck {
         given:
         buildFile <<  """
 shellcheck {
-    source = file("${resources.absolutePath}/with_violations")
+    sources = files("${resources.absolutePath}/with_violations")
     severity = "error"
 }
 """

@@ -3,6 +3,7 @@ package com.felipefzdz.gradle.shellcheck;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.reporting.Reporting;
@@ -19,7 +20,7 @@ import java.io.IOException;
 @CacheableTask
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
-    private File source;
+    private FileCollection sources;
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
@@ -41,14 +42,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         ShellcheckInvoker.invoke(this);
     }
 
-    @InputDirectory
+    @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    public File getSource() {
-        return source;
+    public FileCollection getSources() {
+        return sources;
     }
 
-    public void setSource(File source) {
-        this.source = source;
+    public void setSources(FileCollection sources) {
+        this.sources = sources;
     }
 
     /**

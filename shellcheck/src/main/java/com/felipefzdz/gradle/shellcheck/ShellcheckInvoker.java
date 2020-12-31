@@ -20,6 +20,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+
 public class ShellcheckInvoker {
 
     private static final String SHELLCHECK_NOFRAMES_SORTED_XSL = "shellcheck-noframes-sorted.xsl";
@@ -111,20 +114,25 @@ public class ShellcheckInvoker {
     }
 
     public static String runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
-        final File source = task.getSource();
-        List<String> command = Arrays.asList(
-            "docker",
-            "run",
-            "--rm",
-            "-v",
-            source.getAbsolutePath() + ":" + source.getAbsolutePath(),
-            "koalaman/shellcheck-alpine:" + task.getShellcheckVersion(),
-            "sh",
-            "-c",
-            findCommand(source) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
+        final List<String> command = new ArrayList<>();
+
+        command.add("docker");
+        command.add("run");
+        command.add("--rm");
+
+        final List<String> volumes = task.getSources().getFiles().stream().map(File::getAbsolutePath).map(folder -> folder + ":" + folder).collect(toList());
+        volumes.forEach(volume -> {
+            command.add("-v");
+            command.add(volume);
+        });
+        command.add("koalaman/shellcheck-alpine:" + task.getShellcheckVersion());
+        command.add("sh");
+        command.add("-c");
+        final String sources = task.getSources().getFiles().stream().map(File::getAbsolutePath).collect(joining(" "));
+        command.add(findCommand(sources) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
 
         ProcessBuilder builder = new ProcessBuilder(command)
-            .directory(source)
+                .directory(task.getProject().getProjectDir())
             .redirectOutput(ProcessBuilder.Redirect.PIPE)
             .redirectErrorStream(true);
         builder.environment().clear();
@@ -147,8 +155,8 @@ public class ShellcheckInvoker {
         return processOutput.toString().trim();
     }
 
-    private static String findCommand(File source) {
-        return "find " + source.getAbsolutePath() + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
+    private static String findCommand(String sources) {
+        return "find " + sources + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
     private static String getMessage(ShellcheckReports reports, ReportSummary reportSummary) {
