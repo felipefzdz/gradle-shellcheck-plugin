@@ -6,7 +6,12 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "0.2.27"
+version = "1.0.0"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 repositories {
     jcenter()
@@ -14,8 +19,8 @@ repositories {
 
 dependencies {
     implementation("org.codehaus.groovy:groovy:2.5.12")
+    implementation("commons-io:commons-io:2.8.0")
     testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
-    testImplementation("commons-io:commons-io:2.8.0")
 }
 
 gradlePlugin {

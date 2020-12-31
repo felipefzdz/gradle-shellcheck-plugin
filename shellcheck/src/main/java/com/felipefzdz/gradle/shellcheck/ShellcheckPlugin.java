@@ -23,9 +23,9 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     public void apply(Project project) {
         project.getPluginManager().apply(ReportingBasePlugin.class);
-        extension = project.getExtensions().create("shellcheck", ShellcheckExtension.class, project);
+        extension = (ShellcheckExtension) project.getExtensions().create("shellcheck", ShellcheckExtension.class, project);
         project.getTasks().register("shellcheck", Shellcheck.class);
-        project.getTasks().withType(Shellcheck.class).configureEach(task -> configureTask(task, project));
+        project.getTasks().withType(Shellcheck.class).configureEach(task -> configureTask((Shellcheck) task, project));
     }
 
     private void configureTask(Shellcheck task, Project project) {

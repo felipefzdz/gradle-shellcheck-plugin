@@ -7,15 +7,20 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.reporting.Reporting;
-import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Console;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.VerificationTask;
 import org.gradle.util.ClosureBackedAction;
-import org.xml.sax.SAXException;
 
 import javax.inject.Inject;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import java.io.File;
-import java.io.IOException;
 
 @CacheableTask
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
@@ -30,7 +35,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private File projectDir;
 
     public Shellcheck() {
-        this.reports = getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
+        this.reports = (ShellcheckReports) getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
     }
 
     @Inject
@@ -39,7 +44,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     }
 
     @TaskAction
-    public void run() throws IOException, InterruptedException, TransformerException, ParserConfigurationException, SAXException {
+    public void run() {
         ShellcheckInvoker.invoke(this);
     }
 

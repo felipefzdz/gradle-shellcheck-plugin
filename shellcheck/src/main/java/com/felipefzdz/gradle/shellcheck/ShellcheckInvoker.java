@@ -1,5 +1,6 @@
 package com.felipefzdz.gradle.shellcheck;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
@@ -16,9 +17,19 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -51,8 +62,8 @@ public class ShellcheckInvoker {
             if (reports.getHtml().isEnabled()) {
                 TransformerFactory factory = TransformerFactory.newInstance();
                 InputStream stylesheet = reports.getHtml().getStylesheet() != null ?
-                    new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
-                    ShellcheckInvoker.class.getClassLoader().getResourceAsStream(SHELLCHECK_NOFRAMES_SORTED_XSL);
+                        new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
+                        ShellcheckInvoker.class.getClassLoader().getResourceAsStream(SHELLCHECK_NOFRAMES_SORTED_XSL);
                 Source xslt = new StreamSource(stylesheet);
                 Transformer transformer = factory.newTransformer(xslt);
 
@@ -73,7 +84,7 @@ public class ShellcheckInvoker {
             if (reports.getTxt().isEnabled()) {
                 maybeReport = Optional.of(runShellcheck(task, "tty"));
 
-                Files.writeString(txtDestination.toPath(), maybeReport.get());
+                FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
             }
             if (task.isShowViolations()) {
                 task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task, "tty")));
@@ -85,14 +96,14 @@ public class ShellcheckInvoker {
 
     private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
-            final String rawOutput = runShellcheck(task, "checkstyle").toString().trim();
+            final String rawOutput = runShellcheck(task, "checkstyle").trim();
             if (rawOutput.contains("No files specified.")) {
                 return Optional.empty();
             }
             assertContainsXml(rawOutput);
             String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
             task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
-            Files.writeString(xmlDestination.toPath(), checkstyleFormatted);
+            FileUtils.writeStringToFile(xmlDestination, checkstyleFormatted, StandardCharsets.UTF_8);
             return Optional.of(parseShellCheckXml(xmlDestination));
         } catch (IOException | InterruptedException | ParserConfigurationException | SAXException e) {
             throw new GradleException("Error while handling Shellcheck checkstyle report", e);
@@ -120,7 +131,8 @@ public class ShellcheckInvoker {
         command.add("run");
         command.add("--rm");
 
-        final List<String> volumes = task.getSources().getFiles().stream().map(File::getAbsolutePath).map(folder -> folder + ":" + folder).collect(toList());
+        final Set<File> sources = (Set<File>) task.getSources().getFiles();
+        final List<String> volumes = sources.stream().map(File::getAbsolutePath).map(folder -> folder + ":" + folder).collect(toList());
         volumes.forEach(volume -> {
             command.add("-v");
             command.add(volume);
@@ -128,24 +140,24 @@ public class ShellcheckInvoker {
         command.add("koalaman/shellcheck-alpine:" + task.getShellcheckVersion());
         command.add("sh");
         command.add("-c");
-        final String sources = task.getSources().getFiles().stream().map(File::getAbsolutePath).collect(joining(" "));
-        command.add(findCommand(sources) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
+        command.add(findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
+
+        task.getLogger().debug("Docker command to run Shellcheck: " + String.join(" ", command));
 
         ProcessBuilder builder = new ProcessBuilder(command)
                 .directory(task.getProjectDir())
-            .redirectOutput(ProcessBuilder.Redirect.PIPE)
-            .redirectErrorStream(true);
+                .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                .redirectErrorStream(true);
         builder.environment().clear();
 
         builder.redirectErrorStream(true);
 
         Process process = builder.start();
-        process.info().commandLine().ifPresent(c -> task.getLogger().debug("Docker command to run Shellcheck: " + c));
 
         StringBuilder processOutput = new StringBuilder();
 
         try (BufferedReader processOutputReader = new BufferedReader(
-            new InputStreamReader(process.getInputStream()))) {
+                new InputStreamReader(process.getInputStream()))) {
             String readLine;
             while ((readLine = processOutputReader.readLine()) != null) {
                 processOutput.append(readLine).append(System.lineSeparator());
@@ -192,8 +204,8 @@ public class ShellcheckInvoker {
 
     private static String getViolationMessage(ReportSummary reportSummary) {
         return reportSummary.filesWithError > 0 ?
-            "Shellcheck files with violations: " + reportSummary.filesWithError + "\nShellcheck violations by severity: " + reportSummary.violationsBySeverity :
-            "\n";
+                "Shellcheck files with violations: " + reportSummary.filesWithError + "\nShellcheck violations by severity: " + reportSummary.violationsBySeverity :
+                "\n";
     }
 
     static class ReportSummary {

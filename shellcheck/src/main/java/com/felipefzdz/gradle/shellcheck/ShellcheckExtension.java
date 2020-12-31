@@ -4,9 +4,6 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.quality.CodeQualityExtension;
 
-import java.io.File;
-import java.util.List;
-
 public class ShellcheckExtension extends CodeQualityExtension {
 
     private final Project project;
@@ -30,7 +27,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     /**
      * Whether rule violations are to be displayed on the console. Defaults to true.
-     *
+     * <p>
      * Example: showViolations = false
      */
     public boolean isShowViolations() {
@@ -39,7 +36,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     /**
      * Whether rule violations are to be displayed on the console. Defaults to true.
-     *
+     * <p>
      * Example: showViolations = false
      */
     public void setShowViolations(boolean showViolations) {
