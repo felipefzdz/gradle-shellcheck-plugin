@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "1.0.0"
+version = "1.1.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -18,17 +18,23 @@ repositories {
 }
 
 dependencies {
-    implementation("org.codehaus.groovy:groovy:2.5.12")
+    implementation(localGroovy())
     implementation("commons-io:commons-io:2.8.0")
-    testImplementation("org.spockframework:spock-core:1.3-groovy-2.5")
+    testImplementation(gradleTestKit())
+    testImplementation(platform("org.spockframework:spock-bom:2.0-M4-groovy-3.0"))
+    testImplementation("org.spockframework:spock-core")
+    testImplementation("org.spockframework:spock-junit4")
+    testImplementation("junit:junit:4.13.1")
 }
 
 gradlePlugin {
-    val shellcheck by plugins.creating {
-        id = "com.felipefzdz.gradle.shellcheck"
-        implementationClass = "com.felipefzdz.gradle.shellcheck.ShellcheckPlugin"
-        displayName = "Shellcheck"
-        description = "The Shellcheck Gradle plugin performs quality checks on your project's Shell source files using Shellcheck and generates reports from these checks."
+    plugins {
+        val shellcheck by plugins.creating {
+            id = "com.felipefzdz.gradle.shellcheck"
+            implementationClass = "com.felipefzdz.gradle.shellcheck.ShellcheckPlugin"
+            displayName = "Shellcheck"
+            description = "The Shellcheck Gradle plugin performs quality checks on your project's Shell source files using Shellcheck and generates reports from these checks."
+        }
     }
 }
 
@@ -38,22 +44,41 @@ pluginBundle {
     tags = listOf("shellcheck", "code-quality")
 }
 
-val functionalTestSourceSet = sourceSets.create("functionalTest") {
+val functionalTestSourceSet = sourceSets.create("functionalTest") { }
+
+configurations[functionalTestSourceSet.implementationConfigurationName].extendsFrom(configurations["testImplementation"])
+configurations[functionalTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations["runtimeOnly"])
+
+val functionalTest = tasks.register("functionalTest", Test::class) {
+    description = "Runs functional tests."
+    group = "verification"
+
+    testClassesDirs = functionalTestSourceSet.output.classesDirs
+    classpath = functionalTestSourceSet.runtimeClasspath
+
+    // should find functional test output summary and use that as the timestamp comparison
+    // if there should be any updates that would affect the integration test
+    outputs.upToDateWhen { false }
+    shouldRunAfter(tasks.named("test"))
+    useJUnitPlatform()
+    testLogging {
+        showStandardStreams = false // true
+        // events "passed", "skipped", "failed"
+        showExceptions = true
+        showCauses = true
+        minGranularity = 2
+        minGranularity = 4
+        displayGranularity = 0
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(functionalTest)
 }
 
 gradlePlugin.testSourceSets(functionalTestSourceSet)
 configurations["functionalTestImplementation"].extendsFrom(configurations["testImplementation"])
 
-val functionalTest by tasks.registering(Test::class) {
-    testClassesDirs = functionalTestSourceSet.output.classesDirs
-    classpath = functionalTestSourceSet.runtimeClasspath
-}
-
-tasks.check {
-    dependsOn(functionalTest)
-}
-
-val validateTaskPropertiesTask = tasks.named("validateTaskProperties")
 tasks.named("publishPlugins").configure {
-    dependsOn(validateTaskPropertiesTask, functionalTest)
+    dependsOn(functionalTest)
 }

@@ -86,7 +86,7 @@ public class ShellcheckInvoker {
 
                 FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
             }
-            if (task.isShowViolations()) {
+            if (task.getShowViolations().get()) {
                 task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task, "tty")));
             }
         } catch (IOException | InterruptedException e) {
@@ -97,7 +97,7 @@ public class ShellcheckInvoker {
     private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
             final String rawOutput = runShellcheck(task, "checkstyle").trim();
-            if (rawOutput.contains("No files specified.")) {
+            if (rawOutput.isEmpty() || rawOutput.contains("No files specified.")) {
                 return Optional.empty();
             }
             assertContainsXml(rawOutput);
@@ -124,30 +124,49 @@ public class ShellcheckInvoker {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
     }
 
+    private static String quoted(String txt) {
+        return "\"" + txt + "\"";
+    }
+
     public static String runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
         final List<String> command = new ArrayList<>();
 
-        command.add("docker");
-        command.add("run");
-        command.add("--rm");
+        final Set<File> sources = (Set<File>) task.getSources()
+            .getFiles();
 
-        final Set<File> sources = (Set<File>) task.getSources().getFiles();
-        final List<String> volumes = sources.stream().map(File::getAbsolutePath).map(folder -> folder + ":" + folder).collect(toList());
-        volumes.forEach(volume -> {
-            command.add("-v");
-            command.add(volume);
-        });
-        command.add("koalaman/shellcheck-alpine:" + task.getShellcheckVersion());
+        if(sources.isEmpty()) {
+            return "No source files specified.";
+        }else{
+            task.getLogger().warn("sources: " + sources.toString());
+        }
+
+        if(task.getUseDocker().get()) {
+            command.add("docker");
+            command.add("run");
+            command.add("--rm");
+
+            final List<String> volumes = sources.stream()
+                .map(File::getAbsolutePath)
+                .map(folder -> folder + ":" + folder)
+                .collect(toList());
+            volumes.forEach(volume -> {
+                command.add("-v");
+                command.add(volume);
+            });
+            command.add(task.getShellcheckImage().get() + ":" + task.getShellcheckVersion().get());
+        }
+        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + task.getShellcheckBinary().get() + " -f " + format + " --severity=" + task.getSeverity().get();
         command.add("sh");
         command.add("-c");
-        command.add(findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs shellcheck -f " + format + " --severity=" + task.getSeverity());
+        command.add(cmd);
 
-        task.getLogger().debug("Docker command to run Shellcheck: " + String.join(" ", command));
+        task.getLogger().warn("Command to run Shellcheck: " + String.join(" ", command));
 
         ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(task.getProjectDir())
+                .directory(task.getProjectDir().getAsFile().get())
                 .redirectOutput(ProcessBuilder.Redirect.PIPE)
                 .redirectErrorStream(true);
+
         builder.environment().clear();
 
         builder.redirectErrorStream(true);
@@ -168,7 +187,7 @@ public class ShellcheckInvoker {
     }
 
     private static String findCommand(String sources) {
-        return "find " + sources + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
+        return "/usr/bin/find " + sources + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
     private static String getMessage(ShellcheckReports reports, ReportSummary reportSummary) {
