@@ -3,16 +3,22 @@ package com.felipefzdz.gradle.shellcheck;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 import org.gradle.api.reporting.Reporting;
+import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Console;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
@@ -23,24 +29,49 @@ import javax.inject.Inject;
 import java.io.File;
 
 @CacheableTask
-public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
+abstract public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
-    private FileCollection sources;
+    private ShellcheckReports reports;
 
-    private final ShellcheckReports reports;
-    private boolean showViolations = true;
-    private boolean ignoreFailures = false;
-    private String shellcheckVersion;
-    private String severity;
-    private File projectDir;
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    abstract public ConfigurableFileCollection getSources();
 
-    public Shellcheck() {
-        this.reports = (ShellcheckReports) getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
-    }
+    /**
+     * Configure whether violations are shown on the console.
+     * @return the flag value
+     */
+    @Console
+    abstract public Property<Boolean> getShowViolations();
+
+    /**
+     * Configure whether shellcheck is run via Docker container or local command line.
+     * @return the flag value, true == docker
+     */
+    @Input
+//    @Optional
+    abstract public Property<Boolean> getUseDocker();
+    @Input
+//    @Optional
+    abstract public Property<Boolean> getContinueBuildOnFailure();
+    @Input
+//    @Optional
+    abstract public Property<String> getShellcheckImage();
+    @Input
+//    @Optional
+    abstract public Property<String> getShellcheckVersion();
+    @Input
+//    @Optional
+    abstract public Property<String> getShellcheckBinary();
+    @Input
+//    @Optional
+    abstract public Property<String> getSeverity();
+    @Internal
+    abstract public RegularFileProperty getProjectDir();
 
     @Inject
-    protected ObjectFactory getObjectFactory() {
-        throw new UnsupportedOperationException();
+    public Shellcheck(ObjectFactory objects) {
+        this.reports = (ShellcheckReports) objects.newInstance(ShellcheckReportsImpl.class, this);
     }
 
     @TaskAction
@@ -48,14 +79,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         ShellcheckInvoker.invoke(this);
     }
 
-    @InputFiles
-    @PathSensitive(PathSensitivity.RELATIVE)
-    public FileCollection getSources() {
-        return sources;
+    @Override
+    public boolean getIgnoreFailures() {
+        return getContinueBuildOnFailure().get();
     }
 
-    public void setSources(FileCollection sources) {
-        this.sources = sources;
+    @Override
+    public void setIgnoreFailures(boolean flag) {
+        getContinueBuildOnFailure().set(flag);
     }
 
     /**
@@ -65,7 +96,6 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     @Nested
     public final ShellcheckReports getReports() {
         return reports;
-
     }
 
     /**
@@ -115,64 +145,4 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
         return reports;
     }
 
-    /**
-     * Whether rule violations are to be displayed on the console.
-     *
-     * @return true if violations should be displayed on console
-     */
-    @Console
-    public boolean isShowViolations() {
-        return showViolations;
-    }
-
-    /**
-     * Whether rule violations are to be displayed on the console.
-     *
-     * @param showViolations
-     */
-    public void setShowViolations(boolean showViolations) {
-        this.showViolations = showViolations;
-    }
-
-    @Input
-    public String getShellcheckVersion() {
-        return shellcheckVersion;
-    }
-
-    public void setShellcheckVersion(String shellcheckVersion) {
-        this.shellcheckVersion = shellcheckVersion;
-    }
-
-    @Override
-    public void setIgnoreFailures(boolean ignoreFailures) {
-        this.ignoreFailures = ignoreFailures;
-    }
-
-    @Internal
-    public boolean isIgnoreFailures() {
-        return ignoreFailures;
-    }
-
-    @Override
-    public boolean getIgnoreFailures() {
-        return ignoreFailures;
-    }
-
-    @Input
-    public String getSeverity() {
-        return severity;
-    }
-
-    public void setSeverity(String severity) {
-        this.severity = severity;
-    }
-
-    @Internal
-    public File getProjectDir() {
-        return projectDir;
-    }
-
-    public void setProjectDir(File projectDir) {
-        this.projectDir = projectDir;
-    }
 }

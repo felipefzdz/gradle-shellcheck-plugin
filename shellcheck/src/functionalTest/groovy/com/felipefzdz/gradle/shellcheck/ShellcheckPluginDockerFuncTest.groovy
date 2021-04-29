@@ -7,7 +7,7 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
-class ShellcheckPluginFuncTest extends Specification {
+class ShellcheckPluginDockerFuncTest extends Specification {
 
     @Rule
     TemporaryFolder testProjectDir = new TemporaryFolder()
@@ -15,10 +15,8 @@ class ShellcheckPluginFuncTest extends Specification {
     File buildFile
     File resources
     File localBuildCacheDirectory
-    File localConfigCacheDirectory
 
     def setup() {
-        localConfigCacheDirectory = new File(testProjectDir.root, '.gradle/configuration-cache')
         localBuildCacheDirectory = testProjectDir.newFolder('local-cache')
         testProjectDir.newFile('settings.gradle') << """
         buildCache {
@@ -38,38 +36,15 @@ plugins {
         resources = new File(testProjectDir.root, "functionalTest")
     }
 
-    def clearConfigurationCache() {
-        localConfigCacheDirectory.listFiles().each { it.delete() };
-    }
-
     def setupSpec() {
         ["docker", "image", "rm", "koalaman/shellcheck-alpine:v0.7.1"].execute().waitForProcessOutput()
     }
 
-    def "(local binary) resource files are available for testing"() {
-        given:
-        def resourcePath = new File(testProjectDir.root, "functionalTest")
-
-        when:
-        List<String> files = resourcePath.list()
-
-        then:
-        def expectedFiles = ["no_shell_scripts",
-         "another_without_violations",
-         "with_violations",
-         "without_violations"]
-        files.each { assert expectedFiles.contains(it); }
-        expectedFiles.each { assert files.contains(it); }
-    }
-
-
-    def "(local binary) fail the build when some scripts in the folder have violations"() {
+    def "fail the build when some scripts in the folder have violations"() {
         given:
         buildFile <<"""
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -89,13 +64,11 @@ shellcheck {
         !report.contains("script_with_violations_wrong_extension.txt")
     }
 
-    def "(local binary) pass the build when no script in the folder has violations"() {
+    def "pass the build when no script in the folder has violations"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/without_violations"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -103,13 +76,11 @@ shellcheck {
         runner().build()
     }
 
-    def "(local binary) ensure cacheability"() {
+    def "ensure cacheability"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -138,14 +109,12 @@ ls /etc
         runnerWithBuildCache().build().task(":shellcheck").outcome == TaskOutcome.SUCCESS
     }
 
-    def "(local binary) pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
+    def "pass the build when some scripts in the folder have violations and ignoreFailures is passed"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
     continueBuildOnFailure.set(true)
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -153,28 +122,24 @@ shellcheck {
         runner().build()
     }
 
-    def "(local binary) pass the build when no files are specified"() {
+    def "not fail when no files are specified"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/no_shell_scripts"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
         expect:
-        runnerWithDebugLogging().build()
+        runner().build()
     }
 
-    def "(local binary) only generate html reports"() {
+    def "only generate html reports"() {
 
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -194,13 +159,11 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
         !new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
-    def "(local binary) generate html, xml and txt reports by default"() {
+    def "generate html, xml and txt reports by default"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -213,14 +176,12 @@ shellcheck {
         new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
-    def "(local binary) provide proper error message when failing for reasons unrelated to shellcheck itself"() {
+    def "provide proper error message when failing for reasons unrelated to shellcheck itself"() {
         given:
         buildFile << """
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
     shellcheckVersion.set("vvvvv0.7.1")
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/badpath/bin/shellcheck")
 }
 """
 
@@ -228,17 +189,31 @@ shellcheck {
         def result = runner().buildAndFail()
 
         then:
-        result.output.contains("Execution failed")
+        result.output.contains("Unable to find image")
     }
 
-    def "(local binary) filtrates by severity"() {
+    def "run with configured shellcheck version"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources.set(files("${resources.absolutePath}/with_violations"))
+    shellcheckVersion.set("v0.7.1")
+}
+"""
+
+        when:
+        def result = runnerWithDebugLogging().buildAndFail()
+
+        then:
+        result.output.contains("shellcheck-alpine:v0.7.1")
+    }
+
+    def "filtrates by severity"() {
         given:
         buildFile <<  """
 shellcheck {
     sources.set(files("${resources.absolutePath}/with_violations"))
     severity.set("error")
-    useDocker.set(false)
-    shellcheckBinary.set("/usr/local/bin/shellcheck")
 }
 """
 
@@ -250,6 +225,25 @@ shellcheck {
         result.getOutput().contains("Shellcheck violations by severity: 1")
     }
 
+    def "shellcheck task can be loaded from the configuration cache"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources.set(files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations"))
+}
+"""
+
+        when:
+        runnerWithConfigurationCache().build()
+
+        and:
+        def result = runnerWithConfigurationCache().build()
+
+        then:
+        result.output.contains('Reusing configuration cache.')
+    }
+
+
     private GradleRunner runnerWithDebugLogging() {
         runner(true)
     }
@@ -259,7 +253,7 @@ shellcheck {
     }
 
     private GradleRunner runnerWithConfigurationCache() {
-        runner(true, false, true)
+        runner(false, false, true)
     }
 
     private GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false, boolean withConfigurationCache = false) {
@@ -279,7 +273,6 @@ shellcheck {
             .withPluginClasspath()
             .withArguments(arguments)
             .withProjectDir(testProjectDir.root)
-            .withDebug(true)
         // https://github.com/gradle/gradle/issues/14125
         if (!withConfigurationCache) {
             runner.withDebug(true)
