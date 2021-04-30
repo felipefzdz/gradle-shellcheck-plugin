@@ -42,7 +42,7 @@ shellcheck {
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
     severity = "error"
-    useDocker = true
+    isUseDocker = true
     shellcheckBinary = "/usr/local/bin/shellcheck"
     installer = "brew"
 }
@@ -55,7 +55,7 @@ is not supported yet.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
 * shellcheckVersion - By default "v0.7.1"
 * severity - Minimum severity of errors to consider (error, warning, info, style). Defaults to `style`.
-* useDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to true.
+* isUseDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to true.
 * shellcheckBinary - /path/to/shellcheck binary. Defaults to `/usr/local/bin/shellcheck`. Ignored if useDocker is true.
 * installer - for a machine without Docker or the shellcheck binary being installed, provide the installer to be used. It supports
 the ones mentioned https://github.com/koalaman/shellcheck#installing[here] under the Unix family. By default, none. Ignored if useDocker is true.
