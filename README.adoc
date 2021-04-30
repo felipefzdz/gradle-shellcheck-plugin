@@ -77,3 +77,10 @@ tasks.withType<Shellcheck>().configureEach {
 XML generated report comes from `shellcheck -f checkstyle`, therefore you can get inspiration from https://github.com/checkstyle/contribution/tree/master/xsl[a sample Checkstyle stylesheet.]
 
 TXT generated report comes from `shellcheck -f tty`.
+
+[[sec:shellcheck_testing]]
+== Testing
+
+With the addition of non Docker mode where a binary is supposed to be previously installed in the executing machine, we introduced a source
+of non portability of the automated tests. To mitigate so, `ShellcheckBinaryPluginFuncTest` will be ignored unless an env var called
+`SHELLCHECK_PATH` will be present.

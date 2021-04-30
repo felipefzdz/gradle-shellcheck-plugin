@@ -7,7 +7,7 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
-class ShellcheckPluginFuncTest extends Specification {
+abstract class BaseShellcheckPluginFuncTest extends Specification {
 
     @Rule
     TemporaryFolder testProjectDir = new TemporaryFolder()
@@ -15,6 +15,10 @@ class ShellcheckPluginFuncTest extends Specification {
     File buildFile
     File resources
     File localBuildCacheDirectory
+
+    abstract boolean getUseDocker()
+
+    abstract String getShellcheckBinary()
 
     def setup() {
         localBuildCacheDirectory = testProjectDir.newFolder('local-cache')
@@ -37,14 +41,18 @@ plugins {
     }
 
     def setupSpec() {
-        ["docker", "image", "rm", "koalaman/shellcheck-alpine:v0.7.1"].execute().waitForProcessOutput()
+        if (useDocker) {
+            ["docker", "image", "rm", "koalaman/shellcheck-alpine:v0.7.1"].execute().waitForProcessOutput()
+        }
     }
 
     def "fail the build when some scripts in the folder have violations"() {
         given:
-        buildFile <<"""
+        buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -69,6 +77,8 @@ shellcheck {
         buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/without_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -81,6 +91,8 @@ shellcheck {
         buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -115,6 +127,8 @@ ls /etc
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     isIgnoreFailures = true
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -127,6 +141,8 @@ shellcheck {
         buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/no_shell_scripts")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -135,11 +151,12 @@ shellcheck {
     }
 
     def "only generate html reports"() {
-
         given:
         buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -164,6 +181,8 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
         buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -176,56 +195,14 @@ shellcheck {
         new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.txt").exists()
     }
 
-    def "provide proper error message when failing for reasons unrelated to shellcheck itself"() {
-        given:
-        buildFile << """
-shellcheck {
-    sources = files("${resources.absolutePath}/with_violations")
-    shellcheckVersion = "vvvvv0.7.1"
-}
-"""
-
-        when:
-        def result = runner().buildAndFail()
-
-        then:
-        result.output.contains("Unable to find image")
-    }
-
-    def "run with configured shellcheck version"() {
-        given:
-        buildFile << """
-shellcheck {
-    sources = files("${resources.absolutePath}/with_violations")
-    shellcheckVersion = "v0.7.0"
-}
-"""
-
-        when:
-        def result = runnerWithDebugLogging().buildAndFail()
-
-        then:
-        result.output.contains("shellcheck-alpine:v0.7.0")
-    }
-
-    private GradleRunner runnerWithDebugLogging() {
-        runner(true)
-    }
-
-    private GradleRunner runnerWithBuildCache() {
-        runner(false, true)
-    }
-
-    private GradleRunner runnerWithConfigurationCache() {
-        runner(false, false, true)
-    }
-
     def "filtrates by severity"() {
         given:
-        buildFile <<  """
+        buildFile << """
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     severity = "error"
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
 }
 """
 
@@ -237,26 +214,16 @@ shellcheck {
         result.getOutput().contains("Shellcheck violations by severity: 1")
     }
 
-    def "shellcheck task can be loaded from the configuration cache"() {
-        given:
-        buildFile << """
-shellcheck {
-    sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
-}
-"""
 
-        when:
-        runnerWithConfigurationCache().build()
-
-        and:
-        def result = runnerWithConfigurationCache().build()
-
-        then:
-        result.output.contains('Reusing configuration cache.')
+    protected GradleRunner runnerWithDebugLogging() {
+        runner(true)
     }
 
+    private GradleRunner runnerWithBuildCache() {
+        runner(false, true)
+    }
 
-    private GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false, boolean withConfigurationCache = false) {
+    protected GradleRunner runner(boolean withDebugLogging = false, boolean withBuildCache = false, boolean withConfigurationCache = false) {
         def arguments = ["shellcheck", "--stacktrace"]
         if (withDebugLogging) {
             arguments << "--debug"
@@ -265,7 +232,7 @@ shellcheck {
             arguments.add(0, "clean")
             arguments << "--build-cache"
         }
-        if(withConfigurationCache) {
+        if (withConfigurationCache) {
             arguments << "--configuration-cache"
         }
         def runner = GradleRunner.create()
