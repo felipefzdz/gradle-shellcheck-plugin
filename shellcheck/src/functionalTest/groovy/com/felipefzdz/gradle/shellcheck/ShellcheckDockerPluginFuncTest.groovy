@@ -63,6 +63,23 @@ shellcheck {
         result.output.contains('Reusing configuration cache.')
     }
 
+    def "PATH and HOME are not stripped from the env to ensure Docker for Mac compatibility"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary" 
+}
+"""
+
+        when:
+        def result = runnerWithDebugLogging().build().output
+
+        then:
+        result.contains("Environment keys after preparing it for isolated Shellcheck execution: [PATH, HOME]")
+    }
+
     private GradleRunner runnerWithConfigurationCache() {
         runner(false, false, true)
     }

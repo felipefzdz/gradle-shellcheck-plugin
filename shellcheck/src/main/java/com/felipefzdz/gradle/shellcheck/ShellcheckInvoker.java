@@ -155,7 +155,7 @@ public class ShellcheckInvoker {
 
         task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
 
-        return run(command, task.getProjectDir());
+        return run(command, task.getProjectDir(), task.getLogger());
     }
 
     private static void maybePrepareCommandToUserDocker(List<String> command, Set<File> sources, String shellcheckVersion, boolean useDocker) {

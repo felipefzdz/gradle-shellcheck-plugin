@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "1.2.0"
+version = "1.3.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8

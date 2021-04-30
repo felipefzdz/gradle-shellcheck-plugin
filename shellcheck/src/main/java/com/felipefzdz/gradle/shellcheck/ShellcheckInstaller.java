@@ -15,7 +15,7 @@ import static java.util.Collections.singletonList;
 
 public class ShellcheckInstaller {
 
-    private static Map<String, List<String>> INSTALLER_COMMANDS = new HashMap<String, List<String>>() {{
+    private static final Map<String, List<String>> INSTALLER_COMMANDS = new HashMap<String, List<String>>() {{
         put("cabal", asList("cabal update", "cabal install ShellCheck"));
         put("stack", asList("stack update", "stack install ShellCheck"));
         put("apt-get", singletonList("apt-get install shellcheck"));
@@ -28,7 +28,7 @@ public class ShellcheckInstaller {
         put("port", singletonList("sudo port install shellcheck"));
         put("pkg_add", singletonList("pkg_add shellcheck"));
         put("zypper", singletonList("zypper in ShellCheck"));
-        put("shellcheck", singletonList("eopkg install shellcheck"));
+        put("eopkg", singletonList("eopkg install shellcheck"));
         put("conda", singletonList("conda install -c conda-forge shellcheck"));
         put("snap", singletonList("snap install --channel=edge shellcheck"));
         put("nix-env", singletonList("nix-env -iA nixpkgs.shellcheck"));
@@ -40,7 +40,7 @@ public class ShellcheckInstaller {
         }
 
         if ("brew".equals(installer)) {
-            final String brewInfo = run("brew info shellcheck", projectDir);
+            final String brewInfo = run("brew info shellcheck", projectDir, logger);
             logger.debug("brew info shellcheck returned: " + brewInfo);
             if (!brewInfo.contains("Not installed")) {
                 logger.debug("Shellcheck is already installed. Skipping installation.");
@@ -51,7 +51,7 @@ public class ShellcheckInstaller {
         List<String> installerCommands = Optional.ofNullable(INSTALLER_COMMANDS.get(installer))
                 .orElseThrow(() -> new IllegalArgumentException("Installer " + installer + " is not supported"));
         for (String installerCommand : installerCommands) {
-            run(installerCommand, projectDir);
+            run(installerCommand, projectDir, logger);
         }
     }
 }
