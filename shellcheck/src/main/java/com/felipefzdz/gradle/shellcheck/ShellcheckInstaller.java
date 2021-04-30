@@ -39,11 +39,13 @@ public class ShellcheckInstaller {
             return;
         }
 
-        final String commandShellcheck = run("command shellcheck", projectDir, logger);
-        logger.debug("command shellcheck returned: " + commandShellcheck);
-        if (!commandShellcheck.contains("shellcheck: command not found")) {
-            logger.debug("Shellcheck is already installed. Skipping installation.");
-            return;
+        if ("brew".equals(installer)) {
+            final String commandShellcheck = run("command shellcheck", projectDir, logger);
+            logger.debug("command shellcheck returned: " + commandShellcheck);
+            if (!commandShellcheck.contains("shellcheck: command not found")) {
+                logger.debug("Shellcheck is already installed. Skipping installation.");
+                return;
+            }
         }
 
         List<String> installerCommands = Optional.ofNullable(INSTALLER_COMMANDS.get(installer))
