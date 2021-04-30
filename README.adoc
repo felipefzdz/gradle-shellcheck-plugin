@@ -12,7 +12,7 @@ To use the Shellcheck plugin, include the following in your build script:
 [source,kotlin]
 ----
 plugins {
-    id("com.felipefzdz.gradle.shellcheck") version "1.1.0"
+    id("com.felipefzdz.gradle.shellcheck") version "1.2.0"
 }
 ----
 
@@ -44,6 +44,7 @@ shellcheck {
     severity = "error"
     useDocker = true
     shellcheckBinary = "/usr/local/bin/shellcheck"
+    installer = "brew"
 }
 ----
 
@@ -52,10 +53,12 @@ shellcheck {
 is not supported yet.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to true.
-* useDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to true.
 * shellcheckVersion - By default "v0.7.1"
-* shellcheckBinary - /path/to/shellcheck binary. Defaults to `shellcheck`.
 * severity - Minimum severity of errors to consider (error, warning, info, style). Defaults to `style`.
+* useDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to true.
+* shellcheckBinary - /path/to/shellcheck binary. Defaults to `/usr/local/bin/shellcheck`. Ignored if useDocker is true.
+* installer - for a machine without Docker or the shellcheck binary being installed, provide the installer to be used. It supports
+the ones mentioned https://github.com/koalaman/shellcheck#installing[here] under the Unix family. By default, none. Ignored if useDocker is true.
 
 [[sec:shellcheck_customize_xsl]]
 == Customizing the HTML report

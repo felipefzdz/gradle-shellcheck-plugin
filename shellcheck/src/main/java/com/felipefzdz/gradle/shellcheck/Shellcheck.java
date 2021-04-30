@@ -34,6 +34,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private String shellcheckVersion;
     private String severity;
     private String shellcheckBinary;
+    private String installer;
     private File projectDir;
 
     public Shellcheck() {
@@ -194,5 +195,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     public void setShellcheckBinary(String shellcheckBinary) {
         this.shellcheckBinary = shellcheckBinary;
+    }
+
+    @Input
+    public String getInstaller() {
+        return installer;
+    }
+
+    public void setInstaller(String installer) {
+        this.installer = installer;
     }
 }

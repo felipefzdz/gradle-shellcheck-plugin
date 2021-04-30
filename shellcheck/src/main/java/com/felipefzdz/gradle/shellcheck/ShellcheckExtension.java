@@ -13,7 +13,8 @@ public class ShellcheckExtension extends CodeQualityExtension {
     private String shellcheckVersion = "v0.7.1";
     private String severity = "style";
     private boolean useDocker = true;
-    private String shellcheckBinary = "shellcheck";
+    private String shellcheckBinary = "/usr/local/bin/shellcheck";
+    private String installer = "";
 
     public ShellcheckExtension(Project project) {
         this.project = project;
@@ -79,5 +80,13 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     public void setShellcheckBinary(String shellcheckBinary) {
         this.shellcheckBinary = shellcheckBinary;
+    }
+
+    public String getInstaller() {
+        return installer;
+    }
+
+    public void setInstaller(String installer) {
+        this.installer = installer;
     }
 }

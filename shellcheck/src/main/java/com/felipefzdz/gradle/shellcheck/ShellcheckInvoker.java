@@ -17,20 +17,15 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
+import static com.felipefzdz.gradle.shellcheck.Shell.run;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -39,6 +34,7 @@ public class ShellcheckInvoker {
     private static final String SHELLCHECK_NOFRAMES_SORTED_XSL = "shellcheck-noframes-sorted.xsl";
 
     public static void invoke(Shellcheck task) {
+        maybeInstallShellcheck(task);
         final ShellcheckReports reports = task.getReports();
         final File xmlDestination = calculateReportDestination(task, reports.getXml());
 
@@ -55,6 +51,16 @@ public class ShellcheckInvoker {
             });
         });
 
+    }
+
+    private static void maybeInstallShellcheck(Shellcheck task) {
+        try {
+            if (!task.isUseDocker()) {
+                ShellcheckInstaller.maybeInstallShellcheck(task.getInstaller(), task.getProjectDir(), task.getLogger());
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new GradleException("Error installing Shellcheck ", e);
+        }
     }
 
     private static void handleHtmlReport(ShellcheckReports reports, File xmlDestination) {
@@ -131,58 +137,43 @@ public class ShellcheckInvoker {
     public static String runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
         final List<String> command = new ArrayList<>();
 
-        final Set<File> sources = (Set<File>) task.getSources()
-            .getFiles();
+        final Set<File> sources = task.getSources()
+                .getFiles();
 
-        if(sources.isEmpty()) {
+        if (sources.isEmpty()) {
             return "No source files specified.";
-        }else{
-            task.getLogger().warn("sources: " + sources.toString());
+        } else {
+            task.getLogger().debug("sources: " + sources);
         }
 
-        if(task.isUseDocker()) {
+        maybePrepareCommandToUserDocker(command, sources, task.getShellcheckVersion(), task.isUseDocker());
+        final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
+        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity();
+        command.add("sh");
+        command.add("-c");
+        command.add(cmd);
+
+        task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
+
+        return run(command, task.getProjectDir());
+    }
+
+    private static void maybePrepareCommandToUserDocker(List<String> command, Set<File> sources, String shellcheckVersion, boolean useDocker) {
+        if (useDocker) {
             command.add("docker");
             command.add("run");
             command.add("--rm");
 
             final List<String> volumes = sources.stream()
-                .map(File::getAbsolutePath)
-                .map(folder -> folder + ":" + folder)
-                .collect(toList());
+                    .map(File::getAbsolutePath)
+                    .map(folder -> folder + ":" + folder)
+                    .collect(toList());
             volumes.forEach(volume -> {
                 command.add("-v");
                 command.add(volume);
             });
-            command.add("koalaman/shellcheck-alpine:" + task.getShellcheckVersion());
+            command.add("koalaman/shellcheck-alpine:" + shellcheckVersion);
         }
-        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + task.getShellcheckBinary() + " -f " + format + " --severity=" + task.getSeverity();
-        command.add("sh");
-        command.add("-c");
-        command.add(cmd);
-
-        task.getLogger().warn("Command to run Shellcheck: " + String.join(" ", command));
-
-        ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(task.getProjectDir())
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectErrorStream(true);
-        builder.environment().clear();
-
-        builder.redirectErrorStream(true);
-
-        Process process = builder.start();
-
-        StringBuilder processOutput = new StringBuilder();
-
-        try (BufferedReader processOutputReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()))) {
-            String readLine;
-            while ((readLine = processOutputReader.readLine()) != null) {
-                processOutput.append(readLine).append(System.lineSeparator());
-            }
-            process.waitFor();
-        }
-        return processOutput.toString().trim();
     }
 
     private static String findCommand(String sources) {
