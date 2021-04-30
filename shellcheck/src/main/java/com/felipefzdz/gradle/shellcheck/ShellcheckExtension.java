@@ -1,28 +1,83 @@
 package com.felipefzdz.gradle.shellcheck;
 
+import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.quality.CodeQualityExtension;
-import org.gradle.api.provider.Property;
 
-abstract public class ShellcheckExtension extends CodeQualityExtension {
+public class ShellcheckExtension extends CodeQualityExtension {
 
-    abstract public Property<FileCollection> getSources();
-    abstract public Property<Boolean> getContinueBuildOnFailure();
-    abstract public Property<Boolean> getShowViolations();
-    abstract public Property<Boolean> getUseDocker();
-    abstract public Property<String> getSeverity();
-    abstract public Property<String> getShellcheckImage();
-    abstract public Property<String> getShellcheckVersion();
-    abstract public Property<String> getShellcheckBinary();
+    private final Project project;
 
-    public ShellcheckExtension() {
-        super();
-        this.getUseDocker().convention(true);
-        this.getShowViolations().convention(true);
-        this.getContinueBuildOnFailure().convention(false);
-        this.getShellcheckBinary().convention("shellcheck");
-        this.getShellcheckImage().convention("koalaman/shellcheck-alpine");
-        this.getShellcheckVersion().convention("v0.7.1");
-        this.getSeverity().convention("style");
+    private FileCollection sources;
+    private boolean showViolations = true;
+    private String shellcheckVersion = "v0.7.1";
+    private String severity = "style";
+    private boolean useDocker = true;
+    private String shellcheckBinary = "shellcheck";
+
+    public ShellcheckExtension(Project project) {
+        this.project = project;
+    }
+
+    public FileCollection getSources() {
+        return sources;
+    }
+
+    public void setSources(FileCollection sources) {
+        this.sources = sources;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console. Defaults to true.
+     * <p>
+     * Example: showViolations = false
+     */
+    public boolean isShowViolations() {
+        return showViolations;
+    }
+
+    /**
+     * Whether rule violations are to be displayed on the console. Defaults to true.
+     * <p>
+     * Example: showViolations = false
+     */
+    public void setShowViolations(boolean showViolations) {
+        this.showViolations = showViolations;
+    }
+
+    public String getShellcheckVersion() {
+        return shellcheckVersion;
+    }
+
+    public void setShellcheckVersion(String shellcheckVersion) {
+        this.shellcheckVersion = shellcheckVersion;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+    public boolean getUseDocker() {
+        return useDocker;
+    }
+
+    public void setUseDocker(boolean useDocker) {
+        this.useDocker = useDocker;
+    }
+
+    public boolean isUseDocker() {
+        return useDocker;
+    }
+
+    public String getShellcheckBinary() {
+        return shellcheckBinary;
+    }
+
+    public void setShellcheckBinary(String shellcheckBinary) {
+        this.shellcheckBinary = shellcheckBinary;
     }
 }

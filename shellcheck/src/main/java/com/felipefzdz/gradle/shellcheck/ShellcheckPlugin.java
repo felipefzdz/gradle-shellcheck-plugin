@@ -2,6 +2,7 @@ package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
@@ -22,18 +23,8 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     public void apply(Project project) {
         project.getPluginManager().apply(ReportingBasePlugin.class);
-        extension = (ShellcheckExtension) project.getExtensions().create("shellcheck", ShellcheckExtension.class);
-        project.getTasks().register("shellcheck", Shellcheck.class, task -> {
-            task.getUseDocker().set(extension.getUseDocker());
-            task.getSeverity().set(extension.getSeverity());
-            task.getContinueBuildOnFailure().set(extension.getContinueBuildOnFailure());
-            task.getShowViolations().set(extension.getShowViolations());
-            task.getShellcheckBinary().set(extension.getShellcheckBinary());
-            task.getShellcheckImage().set(extension.getShellcheckImage());
-            task.getShellcheckVersion().set(extension.getShellcheckVersion());
-            task.getSources().from(extension.getSources());
-            task.getProjectDir().set(project::getProjectDir);
-        });
+        extension = (ShellcheckExtension) project.getExtensions().create("shellcheck", ShellcheckExtension.class, project);
+        project.getTasks().register("shellcheck", Shellcheck.class);
         project.getTasks().withType(Shellcheck.class).configureEach(task -> configureTask((Shellcheck) task, project));
     }
 
@@ -44,7 +35,14 @@ public class ShellcheckPlugin implements Plugin<Project> {
 
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
-        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.getContinueBuildOnFailure().get());
+        taskMapping.map("sources", (Callable<FileCollection>) () -> extension.getSources());
+        taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
+        taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
+        taskMapping.map("useDocker", (Callable<Boolean>) () -> extension.isUseDocker());
+        taskMapping.map("shellcheckVersion", (Callable<String>) () -> extension.getShellcheckVersion());
+        taskMapping.map("severity", (Callable<String>) () -> extension.getSeverity());
+        taskMapping.map("shellcheckBinary", (Callable<String>) () -> extension.getShellcheckBinary());
+        taskMapping.map("projectDir", (Callable<File>) project::getProjectDir);
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file("shellcheck"));
     }

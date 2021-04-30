@@ -86,7 +86,7 @@ public class ShellcheckInvoker {
 
                 FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
             }
-            if (task.getShowViolations().get()) {
+            if (task.isShowViolations()) {
                 task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task, "tty")));
             }
         } catch (IOException | InterruptedException e) {
@@ -140,7 +140,7 @@ public class ShellcheckInvoker {
             task.getLogger().warn("sources: " + sources.toString());
         }
 
-        if(task.getUseDocker().get()) {
+        if(task.isUseDocker()) {
             command.add("docker");
             command.add("run");
             command.add("--rm");
@@ -153,9 +153,9 @@ public class ShellcheckInvoker {
                 command.add("-v");
                 command.add(volume);
             });
-            command.add(task.getShellcheckImage().get() + ":" + task.getShellcheckVersion().get());
+            command.add("koalaman/shellcheck-alpine:" + task.getShellcheckVersion());
         }
-        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + task.getShellcheckBinary().get() + " -f " + format + " --severity=" + task.getSeverity().get();
+        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + task.getShellcheckBinary() + " -f " + format + " --severity=" + task.getSeverity();
         command.add("sh");
         command.add("-c");
         command.add(cmd);
@@ -163,10 +163,9 @@ public class ShellcheckInvoker {
         task.getLogger().warn("Command to run Shellcheck: " + String.join(" ", command));
 
         ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(task.getProjectDir().getAsFile().get())
+                .directory(task.getProjectDir())
                 .redirectOutput(ProcessBuilder.Redirect.PIPE)
                 .redirectErrorStream(true);
-
         builder.environment().clear();
 
         builder.redirectErrorStream(true);
