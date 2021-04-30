@@ -65,6 +65,6 @@ shellcheck {
 
         then:
         output.contains("Shellcheck files with violations: 8")
-        !output.contains("brew info shellcheck returned:")
+        !output.contains("command shellcheck returned:")
     }
 }
