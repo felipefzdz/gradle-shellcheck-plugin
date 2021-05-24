@@ -35,7 +35,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private String severity;
     private String shellcheckBinary;
     private String installer;
-    private File projectDir;
+    private File workingDir;
     private String additionalArguments;
 
     public Shellcheck() {
@@ -172,12 +172,12 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     }
 
     @Internal
-    public File getProjectDir() {
-        return projectDir;
+    public File getWorkingDir() {
+        return workingDir;
     }
 
-    public void setProjectDir(File projectDir) {
-        this.projectDir = projectDir;
+    public void setWorkingDir(File workingDir) {
+        this.workingDir = workingDir;
     }
 
     @Input

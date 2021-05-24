@@ -56,7 +56,7 @@ public class ShellcheckInvoker {
     private static void maybeInstallShellcheck(Shellcheck task) {
         try {
             if (!task.isUseDocker()) {
-                ShellcheckInstaller.maybeInstallShellcheck(task.getInstaller(), task.getProjectDir(), task.getLogger());
+                ShellcheckInstaller.maybeInstallShellcheck(task.getInstaller(), task.getWorkingDir(), task.getLogger());
             }
         } catch (IOException | InterruptedException e) {
             throw new GradleException("Error installing Shellcheck ", e);
@@ -146,7 +146,7 @@ public class ShellcheckInvoker {
             task.getLogger().debug("sources: " + sources);
         }
 
-        maybePrepareCommandToUserDocker(command, sources, task.getShellcheckVersion(), task.isUseDocker());
+        maybePrepareCommandToUserDocker(command, task.getWorkingDir(), sources, task.getShellcheckVersion(), task.isUseDocker());
         final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
         String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
         command.add("sh");
@@ -155,10 +155,10 @@ public class ShellcheckInvoker {
 
         task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
 
-        return run(command, task.getProjectDir(), task.getLogger());
+        return run(command, task.getWorkingDir(), task.getLogger());
     }
 
-    private static void maybePrepareCommandToUserDocker(List<String> command, Set<File> sources, String shellcheckVersion, boolean useDocker) {
+    private static void maybePrepareCommandToUserDocker(List<String> command, File workingDir, Set<File> sources, String shellcheckVersion, boolean useDocker) {
         if (useDocker) {
             command.add("docker");
             command.add("run");
@@ -172,6 +172,8 @@ public class ShellcheckInvoker {
                 command.add("-v");
                 command.add(volume);
             });
+            command.add("-w");
+            command.add(workingDir.getAbsolutePath());
             command.add("koalaman/shellcheck-alpine:" + shellcheckVersion);
         }
     }

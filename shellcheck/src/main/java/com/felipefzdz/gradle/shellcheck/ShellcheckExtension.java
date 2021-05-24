@@ -4,6 +4,8 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.quality.CodeQualityExtension;
 
+import java.io.File;
+
 public class ShellcheckExtension extends CodeQualityExtension {
 
     private final Project project;
@@ -16,9 +18,11 @@ public class ShellcheckExtension extends CodeQualityExtension {
     private String shellcheckBinary = "/usr/local/bin/shellcheck";
     private String installer = "";
     private String additionalArguments = "";
+    private File workingDir;
 
     public ShellcheckExtension(Project project) {
         this.project = project;
+        this.workingDir = project.getProjectDir();
     }
 
     public FileCollection getSources() {
@@ -97,5 +101,13 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     public void setAdditionalArguments(String additionalArguments) {
         this.additionalArguments = additionalArguments;
+    }
+
+    public File getWorkingDir() {
+        return workingDir;
+    }
+
+    public void setWorkingDir(File workingDir) {
+        this.workingDir = workingDir;
     }
 }
