@@ -148,7 +148,7 @@ public class ShellcheckInvoker {
 
         maybePrepareCommandToUserDocker(command, sources, task.getShellcheckVersion(), task.isUseDocker());
         final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
-        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity();
+        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
         command.add("sh");
         command.add("-c");
         command.add(cmd);

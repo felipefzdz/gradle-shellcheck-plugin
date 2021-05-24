@@ -15,6 +15,7 @@ public class ShellcheckExtension extends CodeQualityExtension {
     private boolean useDocker = true;
     private String shellcheckBinary = "/usr/local/bin/shellcheck";
     private String installer = "";
+    private String additionalArguments = "";
 
     public ShellcheckExtension(Project project) {
         this.project = project;
@@ -88,5 +89,13 @@ public class ShellcheckExtension extends CodeQualityExtension {
 
     public void setInstaller(String installer) {
         this.installer = installer;
+    }
+
+    public String getAdditionalArguments() {
+        return additionalArguments;
+    }
+
+    public void setAdditionalArguments(String additionalArguments) {
+        this.additionalArguments = additionalArguments;
     }
 }

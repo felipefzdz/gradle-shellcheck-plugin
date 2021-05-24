@@ -44,6 +44,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
         taskMapping.map("shellcheckBinary", (Callable<String>) () -> extension.getShellcheckBinary());
         taskMapping.map("installer", (Callable<String>) () -> extension.getInstaller());
         taskMapping.map("projectDir", (Callable<File>) project::getProjectDir);
+        taskMapping.map("additionalArguments", (Callable<String>) () -> extension.getAdditionalArguments());
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
         extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file("shellcheck"));
     }

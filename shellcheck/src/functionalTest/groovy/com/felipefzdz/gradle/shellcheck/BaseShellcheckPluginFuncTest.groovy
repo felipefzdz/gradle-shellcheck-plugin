@@ -10,7 +10,7 @@ abstract class BaseShellcheckPluginFuncTest extends BaseInfraTest {
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
@@ -36,7 +36,7 @@ shellcheck {
 shellcheck {
     sources = files("${resources.absolutePath}/without_violations")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
@@ -50,7 +50,7 @@ shellcheck {
 shellcheck {
     sources = files("${resources.absolutePath}/without_violations", "${resources.absolutePath}/another_without_violations")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
@@ -86,7 +86,7 @@ shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     isIgnoreFailures = true
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
@@ -100,12 +100,40 @@ shellcheck {
 shellcheck {
     sources = files("${resources.absolutePath}/no_shell_scripts")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
         expect:
         runner().build()
+    }
+
+    def "pass the build when valid additional arguments are provided"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources = files("${resources.absolutePath}/wihtout_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary"
+    additionalArguments = "-a -x"
+}
+"""
+        expect:
+        runner().build()
+    }
+
+    def "fail the build when invalid additional arguments are provided"() {
+        given:
+        buildFile << """
+shellcheck {
+    sources = files("${resources.absolutePath}/wihtout_violations")
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary"
+    additionalArguments = "--bad-arg"
+}
+"""
+        expect:
+        runner().buildAndFail()
     }
 
     def "only generate html reports"() {
@@ -114,7 +142,7 @@ shellcheck {
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
@@ -140,7 +168,7 @@ tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
 shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
@@ -160,7 +188,7 @@ shellcheck {
     sources = files("${resources.absolutePath}/with_violations")
     severity = "error"
     useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary" 
+    shellcheckBinary = "$shellcheckBinary"
 }
 """
 
