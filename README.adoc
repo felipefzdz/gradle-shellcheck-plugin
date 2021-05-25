@@ -45,6 +45,8 @@ shellcheck {
     isUseDocker = true
     shellcheckBinary = "/usr/local/bin/shellcheck"
     installer = "brew"
+    additionalArguments = "-x"
+    workingDir = file("${buildDir}/scripts")
 }
 ----
 
@@ -59,6 +61,8 @@ is not supported yet.
 * installer - for a machine without Docker or the shellcheck binary being installed, provide the installer to be used. It supports
 the ones mentioned https://github.com/koalaman/shellcheck#installing[here] under the Unix family. By default, none. Ignored if `useDocker` is `true`.
 * severity - Minimum severity of errors to consider (error, warning, info, style). Defaults to `style`.
+* additionalArguments - Additional arguments to pass to shellcheck.
+* workingDir - Sets the working directory to run shellcheck from. Defaults to the project directory.
 
 [[sec:shellcheck_customize_xsl]]
 == Customizing the HTML report

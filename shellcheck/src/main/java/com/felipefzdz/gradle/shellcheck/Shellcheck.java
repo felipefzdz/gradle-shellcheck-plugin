@@ -35,7 +35,8 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private String severity;
     private String shellcheckBinary;
     private String installer;
-    private File projectDir;
+    private File workingDir;
+    private String additionalArguments;
 
     public Shellcheck() {
         this.reports = (ShellcheckReports) getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
@@ -171,12 +172,12 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     }
 
     @Internal
-    public File getProjectDir() {
-        return projectDir;
+    public File getWorkingDir() {
+        return workingDir;
     }
 
-    public void setProjectDir(File projectDir) {
-        this.projectDir = projectDir;
+    public void setWorkingDir(File workingDir) {
+        this.workingDir = workingDir;
     }
 
     @Input
@@ -204,5 +205,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     public void setInstaller(String installer) {
         this.installer = installer;
+    }
+
+    @Input
+    public String getAdditionalArguments() {
+        return additionalArguments;
+    }
+
+    public void setAdditionalArguments(String additionalArguments) {
+        this.additionalArguments = additionalArguments;
     }
 }

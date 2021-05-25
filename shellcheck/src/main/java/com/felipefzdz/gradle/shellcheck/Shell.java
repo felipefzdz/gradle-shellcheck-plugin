@@ -15,9 +15,9 @@ public class Shell {
     static String run(String command, File projectDir, Logger logger) throws IOException, InterruptedException {
         return run(asList(command.split("\\s+")), projectDir, logger);
     }
-    static String run(List<String> command, File projectDir, Logger logger) throws IOException, InterruptedException {
+    static String run(List<String> command, File workingDir, Logger logger) throws IOException, InterruptedException {
         ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(projectDir)
+                .directory(workingDir)
                 .redirectOutput(ProcessBuilder.Redirect.PIPE)
                 .redirectErrorStream(true);
         prepareEnvironment(logger, builder.environment());
