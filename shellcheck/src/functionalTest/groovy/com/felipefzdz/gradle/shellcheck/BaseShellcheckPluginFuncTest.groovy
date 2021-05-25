@@ -112,7 +112,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    sources = files("${resources.absolutePath}/wihtout_violations")
+    sources = files("${resources.absolutePath}/without_violations")
     useDocker = $useDocker
     shellcheckBinary = "$shellcheckBinary"
     additionalArguments = "-a -x"
@@ -126,7 +126,7 @@ shellcheck {
         given:
         buildFile << """
 shellcheck {
-    sources = files("${resources.absolutePath}/wihtout_violations")
+    sources = files("${resources.absolutePath}/without_violations")
     useDocker = $useDocker
     shellcheckBinary = "$shellcheckBinary"
     additionalArguments = "--bad-arg"
