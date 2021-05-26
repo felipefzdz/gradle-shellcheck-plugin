@@ -15,16 +15,9 @@ public class Shell {
     static String run(String command, File projectDir, Logger logger) throws IOException, InterruptedException {
         return run(asList(command.split("\\s+")), projectDir, logger);
     }
+
     static String run(List<String> command, File workingDir, Logger logger) throws IOException, InterruptedException {
-        ProcessBuilder builder = new ProcessBuilder(command)
-                .directory(workingDir)
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectErrorStream(true);
-        prepareEnvironment(logger, builder.environment());
-
-        builder.redirectErrorStream(true);
-
-        Process process = builder.start();
+        Process process = start(command, workingDir, logger);
 
         StringBuilder processOutput = new StringBuilder();
 
@@ -37,6 +30,18 @@ public class Shell {
             process.waitFor();
         }
         return processOutput.toString().trim();
+    }
+
+    static Process start(List<String> command, File workingDir, Logger logger) throws IOException {
+        ProcessBuilder builder = new ProcessBuilder(command)
+                .directory(workingDir)
+                .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                .redirectErrorStream(true);
+        prepareEnvironment(logger, builder.environment());
+
+        builder.redirectErrorStream(true);
+
+        return builder.start();
     }
 
     private static void prepareEnvironment(Logger logger, final Map<String, String> environment) {

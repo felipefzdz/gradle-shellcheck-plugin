@@ -40,6 +40,8 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
     private File workingDir;
     private String additionalArguments;
 
+    private String dockerContainerId;
+
     public Shellcheck() {
         this.reports = (ShellcheckReports) getObjectFactory().newInstance(ShellcheckReportsImpl.class, this);
     }
@@ -228,5 +230,14 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     public void setAdditionalArguments(String additionalArguments) {
         this.additionalArguments = additionalArguments;
+    }
+
+    @Internal
+    public String getDockerContainerId() {
+        return dockerContainerId;
+    }
+
+    public void setDockerContainerId(String dockerContainerId) {
+        this.dockerContainerId = dockerContainerId;
     }
 }
