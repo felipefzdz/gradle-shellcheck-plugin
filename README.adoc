@@ -28,7 +28,7 @@ This implies that no dependencies are required on the executing machine, except 
 [[sec:shellcheck_tasks]]
 == Tasks
 
-The Shellcheck plugin a task called `shellcheck` to the project.
+The Shellcheck plugin adds a task called `shellcheck` to the project.
 
 
 [[sec:shellcheck_extension]]
@@ -38,6 +38,9 @@ The Shellcheck plugin a task called `shellcheck` to the project.
 ----
 shellcheck {
     sources = files("src/shellScripts", "src/moreScripts")
+    sourceFiles = fileTree("scr/shellScripts") {
+       includes("**/*.sh")
+    }
     isIgnoreFailures = true
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
@@ -51,8 +54,8 @@ shellcheck {
 ----
 
 * sources - Folders where the shell scripts are located. It will search recursively matching `.sh`, `.bash`,
-`.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Matching on shell scripts with no extension
-is not supported yet.
+`.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Don't set `sourceFiles` if you set `sources`.
+* sourceFiles - Files to check with shellcheck. Using `sourceFiles` gives complete control over what files are checked using shellcheck. Don't set `source` if you set `sourceFiles`.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings. Defaults to `false`.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to `true`.
 * isUseDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to `true`.
