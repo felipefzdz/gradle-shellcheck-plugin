@@ -2,28 +2,27 @@ package com.felipefzdz.gradle.shellcheck;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.felipefzdz.gradle.shellcheck.Shell.run;
 import static java.util.stream.Collectors.joining;
@@ -88,12 +87,12 @@ public class ShellcheckInvoker {
         try {
             Optional<String> maybeReport = Optional.empty();
             if (reports.getTxt().isEnabled()) {
-                maybeReport = Optional.of(runShellcheck(task, "tty"));
+                maybeReport = Optional.of(runShellcheck(task, "tty")).map(l -> String.join("\n\n", l));
 
                 FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
             }
             if (task.isShowViolations()) {
-                task.getLogger().lifecycle(maybeReport.orElse(runShellcheck(task, "tty")));
+                task.getLogger().lifecycle(maybeReport.orElse(String.join("\n\n", runShellcheck(task, "tty"))));
             }
         } catch (IOException | InterruptedException e) {
             throw new GradleException("Error while handling Shellcheck tty report", e);
@@ -102,16 +101,39 @@ public class ShellcheckInvoker {
 
     private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
-            final String rawOutput = runShellcheck(task, "checkstyle").trim();
-            if (rawOutput.isEmpty() || rawOutput.contains("No files specified.")) {
+            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document merged = documentBuilder.parse(new InputSource(new StringReader("<?xml version='1.0' encoding='UTF-8'?><checkstyle version='4.3'></checkstyle>")));
+
+            final List<String> output = runShellcheck(task, "checkstyle");
+            for(String rawOutput: output) {
+                if (rawOutput.isEmpty() || rawOutput.contains("No source files specified.")) {
+                    continue;
+                }
+                assertContainsXml(rawOutput);
+                String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
+                task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
+
+                Document report = documentBuilder.parse(new InputSource(new StringReader(checkstyleFormatted)));
+                NodeList childNodes = report.getDocumentElement().getChildNodes();
+                for(int i = 0; i < childNodes.getLength(); i++) {
+                    Node importedNode = merged.importNode(childNodes.item(i), true);
+                    merged.getDocumentElement().appendChild(importedNode);
+                }
+            }
+
+            if(!merged.getDocumentElement().hasChildNodes()) {
                 return Optional.empty();
             }
-            assertContainsXml(rawOutput);
-            String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
-            task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
-            FileUtils.writeStringToFile(xmlDestination, checkstyleFormatted, StandardCharsets.UTF_8);
-            return Optional.of(parseShellCheckXml(xmlDestination));
-        } catch (IOException | InterruptedException | ParserConfigurationException | SAXException e) {
+
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(merged);
+            FileWriter writer = new FileWriter(xmlDestination);
+            StreamResult streamResult = new StreamResult(writer);
+            transformer.transform(source, streamResult);
+
+            return Optional.of(merged);
+        } catch (IOException | InterruptedException | ParserConfigurationException | SAXException | TransformerException e) {
             throw new GradleException("Error while handling Shellcheck checkstyle report", e);
         }
     }
@@ -134,28 +156,42 @@ public class ShellcheckInvoker {
         return "\"" + txt + "\"";
     }
 
-    public static String runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
+    public static List<String> runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
         final List<String> command = new ArrayList<>();
 
-        final Set<File> sources = task.getSources()
-                .getFiles();
+        FileCollection sourceCollection = task.getSourceFiles();
+        if (sourceCollection == null) {
+            task.getLogger().debug("Converting 'sources' into a file tree. Original sources: " + task.getSources().getFiles());
+            sourceCollection = task.getSources().getAsFileTree().matching(f -> {
+                f.include("**/*.sh", "**/*.bash", "**/*.ksh", "**/*.bashrc", "**/*.bash_profile", "**/*.bash_login", "**/*.bash_logout");
+            });
+        }
+        final Set<File> sources = sourceCollection.getFiles();
 
         if (sources.isEmpty()) {
-            return "No source files specified.";
+            return Collections.singletonList("No source files specified.");
         } else {
-            task.getLogger().debug("sources: " + sources);
+            task.getLogger().debug("source files: " + sources);
         }
 
         maybePrepareCommandToUserDocker(command, task.getWorkingDir(), sources, task.getShellcheckVersion(), task.isUseDocker());
         final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
-        String cmd = findCommand(sources.stream().map(File::getAbsolutePath).collect(joining(" "))) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
+        String cmd = shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
         command.add("sh");
         command.add("-c");
-        command.add(cmd);
 
-        task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
+        return sources.stream().map(f -> {
+            try {
+                List<String> fileCommand = new ArrayList<>(command);
+                fileCommand.add(cmd + " " + quoted(f.getCanonicalPath()));
 
-        return run(command, task.getWorkingDir(), task.getLogger());
+                task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", fileCommand));
+
+                return run(fileCommand, task.getWorkingDir(), task.getLogger());
+            } catch (IOException | InterruptedException e) {
+                throw new GradleException(e.getMessage(), e);
+            }
+        }).collect(Collectors.toList());
     }
 
     private static void maybePrepareCommandToUserDocker(List<String> command, File workingDir, Set<File> sources, String shellcheckVersion, boolean useDocker) {
@@ -164,14 +200,8 @@ public class ShellcheckInvoker {
             command.add("run");
             command.add("--rm");
 
-            final List<String> volumes = sources.stream()
-                    .map(File::getAbsolutePath)
-                    .map(folder -> folder + ":" + folder)
-                    .collect(toList());
-            volumes.forEach(volume -> {
-                command.add("-v");
-                command.add(volume);
-            });
+            command.add("-v");
+            command.add(workingDir.getAbsolutePath() + ":" + workingDir.getAbsolutePath());
             command.add("-w");
             command.add(workingDir.getAbsolutePath());
             command.add("koalaman/shellcheck-alpine:" + shellcheckVersion);

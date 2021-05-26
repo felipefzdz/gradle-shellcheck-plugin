@@ -30,6 +30,29 @@ shellcheck {
         !report.contains("script_with_violations_wrong_extension.txt")
     }
 
+    def "accept individual source files"() {
+        given:
+        buildFile << """
+shellcheck {
+    sourceFiles = fileTree("${resources.absolutePath}/with_violations") {
+        include("script_with_violations_wrong_extension.txt")
+    }
+    useDocker = $useDocker
+    shellcheckBinary = "$shellcheckBinary"
+}
+"""
+
+        when:
+        def result = runner().buildAndFail()
+
+        then:
+        result.getOutput().contains("Shellcheck files with violations: 1")
+        result.getOutput().contains("Shellcheck violations by severity: 2")
+
+        def report = new File(testProjectDir.root, "build/reports/shellcheck/shellcheck.html").text
+        assert report.contains("script_with_violations_wrong_extension.txt");
+    }
+
     def "pass the build when no script in the folder has violations"() {
         given:
         buildFile << """
