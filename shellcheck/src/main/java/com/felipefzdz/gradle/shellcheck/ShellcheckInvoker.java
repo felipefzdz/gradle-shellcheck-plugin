@@ -3,7 +3,6 @@ package com.felipefzdz.gradle.shellcheck;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.logging.Logger;
 import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.w3c.dom.Document;
@@ -26,7 +25,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.felipefzdz.gradle.shellcheck.Shell.run;
-import static com.felipefzdz.gradle.shellcheck.Shell.start;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -36,23 +34,22 @@ public class ShellcheckInvoker {
 
     public static void invoke(Shellcheck task) {
         maybeInstallShellcheck(task);
-        maybeWithDocker(task, () -> {
-            final ShellcheckReports reports = task.getReports();
-            final File xmlDestination = calculateReportDestination(task, reports.getXml());
+        final ShellcheckReports reports = task.getReports();
+        final File xmlDestination = calculateReportDestination(task, reports.getXml());
 
-            handleCheckstyleReport(task, xmlDestination).ifPresent(parsedReport -> {
-                handleTtyReport(task, reports, calculateReportDestination(task, reports.getTxt()));
-                handleHtmlReport(reports, xmlDestination);
-                calculateReportSummary(parsedReport).ifPresent(reportSummary -> {
-                    final String message = getMessage(reports, reportSummary);
-                    if (task.getIgnoreFailures()) {
-                        task.getLogger().warn(message);
-                    } else {
-                        throw new GradleException(message);
-                    }
-                });
+        handleCheckstyleReport(task, xmlDestination).ifPresent(parsedReport -> {
+            handleTtyReport(task, reports, calculateReportDestination(task, reports.getTxt()));
+            handleHtmlReport(reports, xmlDestination);
+            calculateReportSummary(parsedReport).ifPresent(reportSummary -> {
+                final String message = getMessage(reports, reportSummary);
+                if (task.getIgnoreFailures()) {
+                    task.getLogger().warn(message);
+                } else {
+                    throw new GradleException(message);
+                }
             });
         });
+
     }
 
     private static void maybeInstallShellcheck(Shellcheck task) {
@@ -181,8 +178,7 @@ public class ShellcheckInvoker {
             task.getLogger().debug("source files: " + sources);
         }
 
-        task.getLogger().debug("Docker container ID: " + task.getDockerContainerId());
-        maybePrepareCommandToUserDocker(command, task.getDockerContainerId(), task.isUseDocker());
+        maybePrepareCommandToUserDocker(command, task.getWorkingDir(), sources, task.getShellcheckVersion(), task.isUseDocker());
         final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
         String cmd = shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
         command.add("sh");
@@ -202,55 +198,22 @@ public class ShellcheckInvoker {
         }).collect(Collectors.toList());
     }
 
-    private static void maybePrepareCommandToUserDocker(List<String> command, String containerId, boolean useDocker) {
+    private static void maybePrepareCommandToUserDocker(List<String> command, File workingDir, Set<File> sources, String shellcheckVersion, boolean useDocker) {
         if (useDocker) {
             command.add("docker");
-            command.add("exec");
-            command.add(containerId);
+            command.add("run");
+            command.add("--rm");
+
+            command.add("-v");
+            command.add(workingDir.getAbsolutePath() + ":" + workingDir.getAbsolutePath());
+            command.add("-w");
+            command.add(workingDir.getAbsolutePath());
+            command.add("koalaman/shellcheck-alpine:" + shellcheckVersion);
         }
     }
 
-    private static void maybeWithDocker(Shellcheck task, Runnable f) {
-        if(task.isUseDocker()) {
-            String containerId = startDocker(task.getWorkingDir(), task.getShellcheckVersion(), task.getLogger());
-            task.setDockerContainerId(containerId);
-            try {
-                f.run();
-            } finally {
-                stopDocker(containerId, task.getWorkingDir(), task.getLogger());
-            }
-        } else {
-            f.run();
-        }
-    }
-
-    private static String startDocker(File workingDir, String shellcheckVersion, Logger logger) {
-        List<String> command = new ArrayList<>();
-        command.add("docker");
-        command.add("run");
-        command.add("-it");
-        command.add("--rm");
-        command.add("--detach");
-        command.add("-v");
-        command.add(workingDir.getAbsolutePath() + ":" + workingDir.getAbsolutePath());
-        command.add("-w");
-        command.add(workingDir.getAbsolutePath());
-        command.add("koalaman/shellcheck-alpine:" + shellcheckVersion);
-
-        try {
-            logger.debug("Starting docker with " + String.join(" ", command));
-            return run(command, workingDir, logger);
-        } catch (IOException | InterruptedException e) {
-            throw new GradleException("Failed to start docker: " + e.getMessage(), e);
-        }
-    }
-
-    private static void stopDocker(String containerId, File workingDir, Logger logger) {
-        try {
-            run("docker stop " + containerId, workingDir, logger);
-        } catch (IOException | InterruptedException e) {
-            throw new GradleException("Failed to stop docker container " + containerId + ":" + e.getMessage(), e);
-        }
+    private static String findCommand(String sources) {
+        return "/usr/bin/find " + sources + " -type f \\( -name '*.sh' -o -name '*.bash' -o -name '*.ksh' -o -name '*.bashrc' -o -name '*.bash_profile' -o -name '*.bash_login' -o -name '*.bash_logout' \\)";
     }
 
     private static String getMessage(ShellcheckReports reports, ReportSummary reportSummary) {
