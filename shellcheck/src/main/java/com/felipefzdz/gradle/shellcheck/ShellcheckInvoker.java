@@ -101,41 +101,49 @@ public class ShellcheckInvoker {
 
     private static Optional<Document> handleCheckstyleReport(Shellcheck task, File xmlDestination) {
         try {
-            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document merged = documentBuilder.parse(new InputSource(new StringReader("<?xml version='1.0' encoding='UTF-8'?><checkstyle version='4.3'></checkstyle>")));
-
             final List<String> output = runShellcheck(task, "checkstyle");
-            for(String rawOutput: output) {
-                if (rawOutput.isEmpty() || rawOutput.contains("No source files specified.")) {
-                    continue;
-                }
-                assertContainsXml(rawOutput);
-                String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
-                task.getLogger().debug("Shellcheck output: " + checkstyleFormatted);
+            task.getLogger().debug("Shellcheck output: " + output);
 
-                Document report = documentBuilder.parse(new InputSource(new StringReader(checkstyleFormatted)));
-                NodeList childNodes = report.getDocumentElement().getChildNodes();
-                for(int i = 0; i < childNodes.getLength(); i++) {
-                    Node importedNode = merged.importNode(childNodes.item(i), true);
-                    merged.getDocumentElement().appendChild(importedNode);
-                }
-            }
+            Document mergedCheckstyleXmlReport = mergeCheckstyleXml(output);
 
-            if(!merged.getDocumentElement().hasChildNodes()) {
+            if(!mergedCheckstyleXmlReport.getDocumentElement().hasChildNodes()) {
                 return Optional.empty();
             }
-
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(merged);
-            FileWriter writer = new FileWriter(xmlDestination);
-            StreamResult streamResult = new StreamResult(writer);
-            transformer.transform(source, streamResult);
-
-            return Optional.of(merged);
+            writeXmlToFile(mergedCheckstyleXmlReport, xmlDestination);
+            return Optional.of(mergedCheckstyleXmlReport);
         } catch (IOException | InterruptedException | ParserConfigurationException | SAXException | TransformerException e) {
             throw new GradleException("Error while handling Shellcheck checkstyle report", e);
         }
+    }
+
+    private static Document mergeCheckstyleXml(List<String> output) throws ParserConfigurationException, SAXException, IOException {
+        DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document merged = documentBuilder.parse(new InputSource(new StringReader("<?xml version='1.0' encoding='UTF-8'?><checkstyle version='4.3'></checkstyle>")));
+
+        for(String rawOutput: output) {
+            if (rawOutput.isEmpty() || rawOutput.contains("No source files specified.")) {
+                continue;
+            }
+            assertContainsXml(rawOutput);
+            String checkstyleFormatted = rawOutput.substring(rawOutput.indexOf("<?xml"));
+
+            Document report = documentBuilder.parse(new InputSource(new StringReader(checkstyleFormatted)));
+            NodeList childNodes = report.getDocumentElement().getChildNodes();
+            for(int i = 0; i < childNodes.getLength(); i++) {
+                Node importedNode = merged.importNode(childNodes.item(i), true);
+                merged.getDocumentElement().appendChild(importedNode);
+            }
+        }
+        return merged;
+    }
+
+    private static void writeXmlToFile(Document merged, File xmlDestination) throws IOException, TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        DOMSource source = new DOMSource(merged);
+        FileWriter writer = new FileWriter(xmlDestination);
+        StreamResult streamResult = new StreamResult(writer);
+        transformer.transform(source, streamResult);
     }
 
     private static File calculateReportDestination(Shellcheck task, SingleFileReport report) {
@@ -148,10 +156,6 @@ public class ShellcheckInvoker {
         }
     }
 
-    private static Document parseShellCheckXml(File xmlDestination) throws ParserConfigurationException, IOException, SAXException {
-        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDestination);
-    }
-
     private static String quoted(String txt) {
         return "\"" + txt + "\"";
     }
@@ -162,9 +166,9 @@ public class ShellcheckInvoker {
         FileCollection sourceCollection = task.getSourceFiles();
         if (sourceCollection == null) {
             task.getLogger().debug("Converting 'sources' into a file tree. Original sources: " + task.getSources().getFiles());
-            sourceCollection = task.getSources().getAsFileTree().matching(f -> {
-                f.include("**/*.sh", "**/*.bash", "**/*.ksh", "**/*.bashrc", "**/*.bash_profile", "**/*.bash_login", "**/*.bash_logout");
-            });
+            sourceCollection = task.getSources().getAsFileTree().matching(f ->
+                f.include("**/*.sh", "**/*.bash", "**/*.ksh", "**/*.bashrc", "**/*.bash_profile", "**/*.bash_login", "**/*.bash_logout")
+            );
         }
         final Set<File> sources = sourceCollection.getFiles();
 
