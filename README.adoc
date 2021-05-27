@@ -28,7 +28,7 @@ This implies that no dependencies are required on the executing machine, except 
 [[sec:shellcheck_tasks]]
 == Tasks
 
-The Shellcheck plugin a task called `shellcheck` to the project.
+The Shellcheck plugin adds a task called `shellcheck` to the project.
 
 
 [[sec:shellcheck_extension]]
@@ -38,6 +38,9 @@ The Shellcheck plugin a task called `shellcheck` to the project.
 ----
 shellcheck {
     sources = files("src/shellScripts", "src/moreScripts")
+    sourceFiles = fileTree("scr/shellScripts") {
+       includes("**/*.txt")
+    }
     isIgnoreFailures = true
     isShowViolations = true
     shellcheckVersion = "v0.7.1"
@@ -51,8 +54,8 @@ shellcheck {
 ----
 
 * sources - Folders where the shell scripts are located. It will search recursively matching `.sh`, `.bash`,
-`.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Matching on shell scripts with no extension
-is not supported yet.
+`.bash_login`, `.bash_logout`, `.bash_profile`, `.bashrc` and `.ksh` files. Don't set `sourceFiles` if you set `sources`.
+* sourceFiles - Files to check with shellcheck. Using `sourceFiles` gives complete control over what files are checked using shellcheck.
 * isIgnoreFailures - Whether to allow the build to continue if there are warnings. Defaults to `false`.
 * isShowViolations - Whether rule violations are to be displayed on the console. Defaults to `true`.
 * isUseDocker - Whether to use docker image (true) or local shellcheck binary (false). Defaults to `true`.
@@ -84,6 +87,20 @@ tasks.withType<Shellcheck>().configureEach {
 XML generated report comes from `shellcheck -f checkstyle`, therefore you can get inspiration from https://github.com/checkstyle/contribution/tree/master/xsl[a sample Checkstyle stylesheet.]
 
 TXT generated report comes from `shellcheck -f tty`.
+
+[[sec:shellcheck_performance]]
+== Performance
+
+Using Docker is slower than using a locally installed shellcheck binary since there is a cost to starting up a Docker container.
+
+Additionally, using `sourceFiles` is slower than using `sources` (particularly when also using Docker). When script files
+are provided using `sourceFiles`, shellcheck is invoked for each file. In contrast, when using `sources`, shellcheck is
+invoked only once for all the scripts found in the directories identified by `sources`.
+
+Despite the performance penalty, `sourceFiles` is useful if you need to check scripts which do not have a standard shell
+extension (or no extension at all). Using `sourceFiles` also avoids issues related to command length (if you have a lot
+of shell files to check, using `sources` could fail because the resulting shellcheck command could exceed the shell's
+maximum command length).
 
 [[sec:shellcheck_testing]]
 == Testing

@@ -36,6 +36,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
     private void configureTaskConventionMapping(Shellcheck task, Project project) {
         ConventionMapping taskMapping = task.getConventionMapping();
         taskMapping.map("sources", (Callable<FileCollection>) () -> extension.getSources());
+        taskMapping.map("sourceFiles", (Callable<FileCollection>) () -> extension.getSourceFiles());
         taskMapping.map("ignoreFailures", (Callable<Boolean>) () -> extension.isIgnoreFailures());
         taskMapping.map("showViolations", (Callable<Boolean>) () -> extension.isShowViolations());
         taskMapping.map("useDocker", (Callable<Boolean>) () -> extension.isUseDocker());

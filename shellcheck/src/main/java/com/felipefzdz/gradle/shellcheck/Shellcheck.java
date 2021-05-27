@@ -16,6 +16,7 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.VerificationTask;
 import org.gradle.util.ClosureBackedAction;
 
@@ -26,6 +27,7 @@ import java.io.File;
 public class Shellcheck extends ConventionTask implements VerificationTask, Reporting<ShellcheckReports> {
 
     private FileCollection sources;
+    private FileCollection sourceFiles;
 
     private final ShellcheckReports reports;
     private boolean showViolations = true;
@@ -54,12 +56,24 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
+    @Optional
     public FileCollection getSources() {
         return sources;
     }
 
     public void setSources(FileCollection sources) {
         this.sources = sources;
+    }
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @Optional
+    public FileCollection getSourceFiles() {
+        return sourceFiles;
+    }
+
+    public void setSourceFiles(FileCollection sourceFiles) {
+        this.sourceFiles = sourceFiles;
     }
 
     /**
