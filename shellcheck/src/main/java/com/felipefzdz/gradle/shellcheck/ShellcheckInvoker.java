@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static com.felipefzdz.gradle.shellcheck.Shell.run;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 public class ShellcheckInvoker {
 
@@ -121,7 +120,7 @@ public class ShellcheckInvoker {
         Document merged = documentBuilder.parse(new InputSource(new StringReader("<?xml version='1.0' encoding='UTF-8'?><checkstyle version='4.3'></checkstyle>")));
 
         for(String rawOutput: output) {
-            if (rawOutput.isEmpty() || rawOutput.contains("No source files specified.")) {
+            if (rawOutput.isEmpty() || rawOutput.contains("No files specified.")) {
                 continue;
             }
             assertContainsXml(rawOutput);
@@ -161,30 +160,57 @@ public class ShellcheckInvoker {
     }
 
     public static List<String> runShellcheck(Shellcheck task, String format) throws IOException, InterruptedException {
-        final List<String> command = new ArrayList<>();
-
-        FileCollection sourceCollection = task.getSourceFiles();
-        if (sourceCollection == null) {
-            task.getLogger().debug("Converting 'sources' into a file tree. Original sources: " + task.getSources().getFiles());
-            sourceCollection = task.getSources().getAsFileTree().matching(f ->
-                f.include("**/*.sh", "**/*.bash", "**/*.ksh", "**/*.bashrc", "**/*.bash_profile", "**/*.bash_login", "**/*.bash_logout")
-            );
-        }
-        final Set<File> sources = sourceCollection.getFiles();
-
-        if (sources.isEmpty()) {
-            return Collections.singletonList("No source files specified.");
+        if (isNullOrEmpty(task.getSources()) && isNullOrEmpty(task.getSourceFiles())) {
+            return Collections.singletonList("No files specified.");
         } else {
-            task.getLogger().debug("source files: " + sources);
+            task.getLogger().debug("source dirs: " + task.getSources());
+            task.getLogger().debug("source files: " + task.getSourceFiles());
         }
 
-        maybePrepareCommandToUserDocker(command, task.getWorkingDir(), sources, task.getShellcheckVersion(), task.isUseDocker());
+        List<String> shellcheckOutput = new ArrayList<>();
+        if (!isNullOrEmpty(task.getSources())) {
+            shellcheckOutput.addAll(runShellcheckOnDirs(task, format, task.getSources().getFiles()));
+        }
+        if (!isNullOrEmpty(task.getSourceFiles())) {
+            shellcheckOutput.addAll(runShellcheckOnFiles(task, format, task.getSourceFiles().getFiles()));
+        }
+        return shellcheckOutput;
+    }
+
+    private static boolean isNullOrEmpty(FileCollection collection) {
+        return collection == null || collection.isEmpty();
+    }
+
+    private static List<String> runShellcheckOnDirs(Shellcheck task, String format, Set<File> sourceDirs) throws IOException, InterruptedException {
+        final List<String> command = new ArrayList<>();
+        maybePrepareCommandToUseDocker(command, task.getWorkingDir(), task.getShellcheckVersion(), task.isUseDocker());
+        final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
+
+        StringJoiner joiner = new StringJoiner(" ");
+        for (File sourceDir : sourceDirs) {
+            String canonicalPath = quoted(sourceDir.getCanonicalPath());
+            joiner.add(canonicalPath);
+        }
+
+        String cmd = findCommand(joiner.toString()) + " | xargs " + shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
+        command.add("sh");
+        command.add("-c");
+        command.add(cmd);
+
+        task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
+
+        return Collections.singletonList(run(command, task.getWorkingDir(), task.getLogger()));
+    }
+
+    private static List<String> runShellcheckOnFiles(Shellcheck task, String format, Set<File> sourceFiles) {
+        final List<String> command = new ArrayList<>();
+        maybePrepareCommandToUseDocker(command, task.getWorkingDir(), task.getShellcheckVersion(), task.isUseDocker());
         final String shellcheckBinary = task.isUseDocker() ? "shellcheck" : task.getShellcheckBinary();
         String cmd = shellcheckBinary + " -f " + format + " --severity=" + task.getSeverity() + " " + task.getAdditionalArguments();
         command.add("sh");
         command.add("-c");
 
-        return sources.stream().map(f -> {
+        return sourceFiles.stream().map(f -> {
             try {
                 List<String> fileCommand = new ArrayList<>(command);
                 fileCommand.add(cmd + " " + quoted(f.getCanonicalPath()));
@@ -198,7 +224,7 @@ public class ShellcheckInvoker {
         }).collect(Collectors.toList());
     }
 
-    private static void maybePrepareCommandToUserDocker(List<String> command, File workingDir, Set<File> sources, String shellcheckVersion, boolean useDocker) {
+    private static void maybePrepareCommandToUseDocker(List<String> command, File workingDir, String shellcheckVersion, boolean useDocker) {
         if (useDocker) {
             command.add("docker");
             command.add("run");
