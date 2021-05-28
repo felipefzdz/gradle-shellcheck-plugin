@@ -91,7 +91,7 @@ public class ShellcheckInvoker {
                 FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
             }
             if (task.isShowViolations()) {
-                task.getLogger().lifecycle(maybeReport.orElse(String.join("\n\n", runShellcheck(task, "tty"))));
+                task.getLogger().lifecycle(maybeReport.orElse(String.join("\n\n", runShellcheck(task, "tty")).trim()));
             }
         } catch (IOException | InterruptedException e) {
             throw new GradleException("Error while handling Shellcheck tty report", e);
@@ -199,7 +199,7 @@ public class ShellcheckInvoker {
 
         task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", command));
 
-        return Collections.singletonList(run(command, task.getWorkingDir(), task.getLogger()));
+        return Collections.singletonList(run(command, task.getWorkingDir(), task.getLogger()).trim());
     }
 
     private static List<String> runShellcheckOnFiles(Shellcheck task, String format, Set<File> sourceFiles) {
@@ -217,7 +217,7 @@ public class ShellcheckInvoker {
 
                 task.getLogger().debug("Command to run Shellcheck: " + String.join(" ", fileCommand));
 
-                return run(fileCommand, task.getWorkingDir(), task.getLogger());
+                return run(fileCommand, task.getWorkingDir(), task.getLogger()).trim();
             } catch (IOException | InterruptedException e) {
                 throw new GradleException(e.getMessage(), e);
             }
