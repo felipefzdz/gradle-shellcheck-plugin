@@ -25,7 +25,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.felipefzdz.gradle.shellcheck.Shell.run;
-import static java.util.stream.Collectors.joining;
 
 public class ShellcheckInvoker {
 
@@ -63,7 +62,7 @@ public class ShellcheckInvoker {
 
     private static void handleHtmlReport(ShellcheckReports reports, File xmlDestination) {
         try {
-            if (reports.getHtml().isEnabled()) {
+            if (reports.getHtml().getRequired().get()) {
                 TransformerFactory factory = TransformerFactory.newInstance();
                 InputStream stylesheet = reports.getHtml().getStylesheet() != null ?
                         new FileInputStream(reports.getHtml().getStylesheet().asFile()) :
@@ -72,9 +71,9 @@ public class ShellcheckInvoker {
                 Transformer transformer = factory.newTransformer(xslt);
 
                 Source text = new StreamSource(xmlDestination);
-                transformer.transform(text, new StreamResult(reports.getHtml().getDestination()));
+                transformer.transform(text, new StreamResult(reports.getHtml().getOutputLocation().getAsFile().get()));
             }
-            if (!reports.getXml().isEnabled()) {
+            if (!reports.getXml().getRequired().get()) {
                 Files.deleteIfExists(xmlDestination.toPath());
             }
         } catch (TransformerException | IOException e) {
@@ -85,7 +84,7 @@ public class ShellcheckInvoker {
     private static void handleTtyReport(Shellcheck task, ShellcheckReports reports, File txtDestination) {
         try {
             Optional<String> maybeReport = Optional.empty();
-            if (reports.getTxt().isEnabled()) {
+            if (reports.getTxt().getRequired().get()) {
                 maybeReport = Optional.of(runShellcheck(task, "tty")).map(l -> String.join("\n\n", l));
 
                 FileUtils.writeStringToFile(txtDestination, maybeReport.get(), StandardCharsets.UTF_8);
@@ -146,7 +145,7 @@ public class ShellcheckInvoker {
     }
 
     private static File calculateReportDestination(Shellcheck task, SingleFileReport report) {
-        return report.isEnabled() ? report.getDestination() : new File(task.getTemporaryDir(), report.getDestination().getName());
+        return report.getRequired().get() ? report.getOutputLocation().getAsFile().get() : new File(task.getTemporaryDir(), report.getOutputLocation().getAsFile().get().getName());
     }
 
     private static void assertContainsXml(String potentialXml) {
@@ -269,8 +268,8 @@ public class ShellcheckInvoker {
     }
 
     private static String getReportUrlMessage(ShellcheckReports reports) {
-        SingleFileReport report = reports.getHtml().isEnabled() ? reports.getHtml() : reports.getXml().isEnabled() ? reports.getXml() : null;
-        return report != null ? " See the report at: " + new ConsoleRenderer().asClickableFileUrl(report.getDestination()) + "\n" : "\n";
+        SingleFileReport report = reports.getHtml().getRequired().get() ? reports.getHtml() : reports.getXml().getRequired().get() ? reports.getXml() : null;
+        return report != null ? " See the report at: " + new ConsoleRenderer().asClickableFileUrl(report.getOutputLocation().getAsFile().get()) + "\n" : "\n";
     }
 
     private static String getViolationMessage(ReportSummary reportSummary) {
