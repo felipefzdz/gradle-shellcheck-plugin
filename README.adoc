@@ -12,7 +12,7 @@ To use the Shellcheck plugin, include the following in your build script:
 [source,kotlin]
 ----
 plugins {
-    id("com.felipefzdz.gradle.shellcheck") version "1.4.5"
+    id("com.felipefzdz.gradle.shellcheck") version "1.4.6"
 }
 ----
 

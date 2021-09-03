@@ -7,17 +7,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.reporting.Reporting;
-import org.gradle.api.tasks.CacheableTask;
-import org.gradle.api.tasks.Console;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.Nested;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
-import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.Optional;
-import org.gradle.api.tasks.VerificationTask;
+import org.gradle.api.tasks.*;
 import org.gradle.util.ClosureBackedAction;
 
 import javax.inject.Inject;
@@ -56,6 +46,7 @@ public class Shellcheck extends ConventionTask implements VerificationTask, Repo
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
+    @IgnoreEmptyDirectories
     @Optional
     public FileCollection getSources() {
         return sources;
