@@ -9,8 +9,9 @@ group = "com.felipefzdz.gradle.shellcheck"
 version = "1.4.6"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 repositories {
