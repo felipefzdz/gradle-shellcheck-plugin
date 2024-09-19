@@ -3,7 +3,6 @@ package com.felipefzdz.gradle.shellcheck;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.internal.logging.ConsoleRenderer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -14,14 +13,28 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import static com.felipefzdz.gradle.shellcheck.Shell.run;
@@ -144,7 +157,7 @@ public class ShellcheckInvoker {
         transformer.transform(source, streamResult);
     }
 
-    private static File calculateReportDestination(Shellcheck task, SingleFileReport report) {
+    private static File calculateReportDestination(Shellcheck task, ShellcheckReport report) {
         return report.getRequired().get() ? report.getOutputLocation().getAsFile().get() : new File(task.getTemporaryDir(), report.getOutputLocation().getAsFile().get().getName());
     }
 
@@ -268,7 +281,7 @@ public class ShellcheckInvoker {
     }
 
     private static String getReportUrlMessage(ShellcheckReports reports) {
-        SingleFileReport report = reports.getHtml().getRequired().get() ? reports.getHtml() : reports.getXml().getRequired().get() ? reports.getXml() : null;
+        ShellcheckReport report = reports.getHtml().getRequired().get() ? reports.getHtml() : reports.getXml().getRequired().get() ? reports.getXml() : null;
         return report != null ? " See the report at: " + new ConsoleRenderer().asClickableFileUrl(report.getOutputLocation().getAsFile().get()) + "\n" : "\n";
     }
 

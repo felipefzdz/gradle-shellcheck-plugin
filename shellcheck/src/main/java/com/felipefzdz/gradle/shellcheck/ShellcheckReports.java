@@ -1,14 +1,13 @@
 package com.felipefzdz.gradle.shellcheck;
 
-import org.gradle.api.reporting.CustomizableHtmlReport;
-import org.gradle.api.reporting.ReportContainer;
-import org.gradle.api.reporting.SingleFileReport;
 import org.gradle.api.tasks.Internal;
+
+import java.util.Collection;
 
 /**
  * The reporting configuration for the {@link Shellcheck} task.
  */
-public interface ShellcheckReports extends ReportContainer<SingleFileReport> {
+public interface ShellcheckReports {
     /**
      * The shellcheck HTML report.
      * <p>
@@ -19,7 +18,7 @@ public interface ShellcheckReports extends ReportContainer<SingleFileReport> {
      * @return The shellcheck HTML report
      */
     @Internal
-    CustomizableHtmlReport getHtml();
+    ShellcheckHtmlReport getHtml();
 
     /**
      * The shellcheck XML report
@@ -29,7 +28,7 @@ public interface ShellcheckReports extends ReportContainer<SingleFileReport> {
      * @return The shellcheck XML report
      */
     @Internal
-    SingleFileReport getXml();
+    ShellcheckReport getXml();
 
     /**
      * The shellcheck TTY report
@@ -38,5 +37,8 @@ public interface ShellcheckReports extends ReportContainer<SingleFileReport> {
      * @return The shellcheck TTY report
      */
     @Internal
-    SingleFileReport getTxt();
+    ShellcheckReport getTxt();
+
+    @Internal
+    Collection<ShellcheckReport> getAll();
 }

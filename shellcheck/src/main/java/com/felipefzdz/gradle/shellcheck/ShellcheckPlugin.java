@@ -2,9 +2,9 @@ package com.felipefzdz.gradle.shellcheck;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.IConventionAware;
 import org.gradle.api.plugins.ReportingBasePlugin;
@@ -14,8 +14,6 @@ import org.gradle.api.reporting.ReportingExtension;
 
 import java.io.File;
 import java.util.concurrent.Callable;
-
-import static org.gradle.api.internal.lambdas.SerializableLambdas.action;
 
 public class ShellcheckPlugin implements Plugin<Project> {
 
@@ -53,16 +51,13 @@ public class ShellcheckPlugin implements Plugin<Project> {
     private void configureReportsConventionMapping(Shellcheck task, Project project) {
         ProjectLayout layout = project.getLayout();
         ProviderFactory providers = project.getProviders();
-        Provider<RegularFile> reportsDir = layout.file(providers.provider(() -> extension.getReportsDir()));
-        task.getReports().all(action(report -> {
-            report.getRequired().convention(true);
-            report.getOutputLocation().convention(
-                layout.getProjectDirectory().file(providers.provider(() -> {
+        Provider<Directory> reportsDir = layout.dir(providers.provider(() -> extension.getReportsDir()));
+        task.getReports().getAll()
+                .forEach(report -> {
+                    report.getRequired().convention(true);
                     String reportFileName = "shellcheck." + report.getName();
-                    return new File(reportsDir.get().getAsFile(), reportFileName).getAbsolutePath();
-                }))
-            );
-        }));
+                    report.getOutputLocation().convention(reportsDir.map(dir -> dir.file(reportFileName)));
+                });
     }
 
     protected static ConventionMapping conventionMappingOf(Object object) {
