@@ -59,6 +59,7 @@ val functionalTest = tasks.register("functionalTest", Test::class) {
     outputs.upToDateWhen { false }
     shouldRunAfter(tasks.named("test"))
     useJUnitPlatform()
+    maxParallelForks = 4
     testLogging {
         showStandardStreams = false // true
         // events "passed", "skipped", "failed"
