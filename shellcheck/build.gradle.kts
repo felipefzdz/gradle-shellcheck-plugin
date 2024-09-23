@@ -1,20 +1,21 @@
 plugins {
     `java-gradle-plugin`
-    `groovy`
+    groovy
     id("maven-publish")
-    id("com.gradle.plugin-publish") version "0.12.0"
+    id("com.gradle.plugin-publish") version "1.2.1"
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
 version = "1.4.6"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -28,20 +29,17 @@ dependencies {
 }
 
 gradlePlugin {
+    website = "https://github.com/felipefzdz/gradle-shellcheck-plugin"
+    vcsUrl = "https://github.com/felipefzdz/gradle-shellcheck-plugin.git"
     plugins {
         val shellcheck by plugins.creating {
             id = "com.felipefzdz.gradle.shellcheck"
             implementationClass = "com.felipefzdz.gradle.shellcheck.ShellcheckPlugin"
             displayName = "Shellcheck"
             description = "The Shellcheck Gradle plugin performs quality checks on your project's Shell source files using Shellcheck and generates reports from these checks."
+            tags = listOf("shellcheck", "code-quality")
         }
     }
-}
-
-pluginBundle {
-    website = "https://github.com/felipefzdz/gradle-shellcheck-plugin"
-    vcsUrl = "https://github.com/felipefzdz/gradle-shellcheck-plugin.git"
-    tags = listOf("shellcheck", "code-quality")
 }
 
 val functionalTestSourceSet = sourceSets.create("functionalTest") { }
@@ -61,6 +59,7 @@ val functionalTest = tasks.register("functionalTest", Test::class) {
     outputs.upToDateWhen { false }
     shouldRunAfter(tasks.named("test"))
     useJUnitPlatform()
+    maxParallelForks = 4
     testLogging {
         showStandardStreams = false // true
         // events "passed", "skipped", "failed"

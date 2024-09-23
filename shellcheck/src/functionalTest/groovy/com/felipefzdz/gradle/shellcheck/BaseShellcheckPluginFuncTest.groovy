@@ -229,9 +229,9 @@ shellcheck {
 
 tasks.withType<com.felipefzdz.gradle.shellcheck.Shellcheck>().configureEach {
     reports {
-        xml.isEnabled = false
-        txt.isEnabled = false
-        html.isEnabled = true
+        xml.required = false
+        txt.required = false
+        html.required = true
     }
 }
 """
