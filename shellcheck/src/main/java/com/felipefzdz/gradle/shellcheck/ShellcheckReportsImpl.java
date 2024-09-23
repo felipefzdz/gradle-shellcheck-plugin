@@ -1,39 +1,55 @@
 package com.felipefzdz.gradle.shellcheck;
 
-import org.gradle.api.Task;
-import org.gradle.api.internal.CollectionCallbackActionDecorator;
-import org.gradle.api.plugins.quality.CheckstyleReports;
-import org.gradle.api.reporting.CustomizableHtmlReport;
-import org.gradle.api.reporting.SingleFileReport;
-import org.gradle.api.reporting.internal.CustomizableHtmlReportImpl;
-import org.gradle.api.reporting.internal.TaskGeneratedSingleFileReport;
-import org.gradle.api.reporting.internal.TaskReportContainer;
+import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.tasks.Nested;
 
 import javax.inject.Inject;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ShellcheckReportsImpl extends TaskReportContainer<SingleFileReport> implements ShellcheckReports {
+public class ShellcheckReportsImpl implements ShellcheckReports {
+
+    private final ShellcheckHtmlReport htmlReport;
+    private final ShellcheckReport xmlReport;
+    private final ShellcheckReport txtReport;
 
     @Inject
-    public ShellcheckReportsImpl(Task task, CollectionCallbackActionDecorator callbackActionDecorator) {
-        super(SingleFileReport.class, task, callbackActionDecorator);
-
-        add(CustomizableHtmlReportImpl.class, "html", task);
-        add(TaskGeneratedSingleFileReport.class, "xml", task);
-        add(TaskGeneratedSingleFileReport.class, "txt", task);
+    public ShellcheckReportsImpl(ObjectFactory objects) {
+        this.htmlReport = objects.newInstance(DefaultShellcheckHtmlReport.class, "html");
+        this.xmlReport = objects.newInstance(DefaultShellcheckReport.class, "xml");
+        this.txtReport = objects.newInstance(DefaultShellcheckReport.class, "txt");
     }
 
     @Override
-    public CustomizableHtmlReport getHtml() {
-        return withType(CustomizableHtmlReport.class).getByName("html");
+    public ShellcheckHtmlReport getHtml() {
+        return htmlReport;
     }
 
     @Override
-    public SingleFileReport getXml() {
-        return getByName("xml");
+    public ShellcheckReport getXml() {
+        return xmlReport;
     }
 
     @Override
-    public SingleFileReport getTxt() {
-        return getByName("txt");
+    public ShellcheckReport getTxt() {
+        return txtReport;
+    }
+
+    @Override
+    public Collection<ShellcheckReport> getAll() {
+        List<ShellcheckReport> shellcheckReports = new java.util.ArrayList<>();
+        shellcheckReports.add(htmlReport);
+        shellcheckReports.add(xmlReport);
+        shellcheckReports.add(txtReport);
+        return shellcheckReports;
+    }
+
+    @Nested
+    public Collection<ShellcheckReport> getEnabledReports() {
+        return Stream.of(htmlReport, xmlReport, txtReport)
+                .filter(it -> it.getRequired().get())
+                .collect(Collectors.toList());
     }
 }
