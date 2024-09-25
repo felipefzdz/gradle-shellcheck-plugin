@@ -19,4 +19,4 @@ jobs:
           java-version: 11
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-      - run: "./gradlew :check"
+      - run: "./gradlew check"
