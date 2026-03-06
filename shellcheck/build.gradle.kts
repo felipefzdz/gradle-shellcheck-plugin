@@ -6,12 +6,11 @@ plugins {
 }
 
 group = "com.felipefzdz.gradle.shellcheck"
-version = "1.5.0"
+version = "1.5.1"
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 repositories {
@@ -22,10 +21,10 @@ dependencies {
     implementation(localGroovy())
     implementation("commons-io:commons-io:2.8.0")
     testImplementation(gradleTestKit())
-    testImplementation(platform("org.spockframework:spock-bom:2.0-M4-groovy-3.0"))
+    testImplementation(platform("org.spockframework:spock-bom:2.4-groovy-4.0"))
     testImplementation("org.spockframework:spock-core")
     testImplementation("org.spockframework:spock-junit4")
-    testImplementation("junit:junit:4.13.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 gradlePlugin {
@@ -45,7 +44,7 @@ gradlePlugin {
 val functionalTestSourceSet = sourceSets.create("functionalTest") { }
 
 configurations[functionalTestSourceSet.implementationConfigurationName].extendsFrom(configurations["testImplementation"])
-configurations[functionalTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations["runtimeOnly"])
+configurations[functionalTestSourceSet.runtimeOnlyConfigurationName].extendsFrom(configurations["runtimeOnly"], configurations["testRuntimeOnly"])
 
 val functionalTest = tasks.register("functionalTest", Test::class) {
     description = "Runs functional tests."

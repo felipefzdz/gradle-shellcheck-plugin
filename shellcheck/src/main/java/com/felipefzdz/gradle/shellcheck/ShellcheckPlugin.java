@@ -45,7 +45,7 @@ public class ShellcheckPlugin implements Plugin<Project> {
         taskMapping.map("workingDir", (Callable<File>) () -> extension.getWorkingDir());
         taskMapping.map("additionalArguments", (Callable<String>) () -> extension.getAdditionalArguments());
         final ConventionMapping extensionMapping = conventionMappingOf(extension);
-        extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).file("shellcheck"));
+        extensionMapping.map("reportsDir", (Callable<File>) () -> project.getExtensions().getByType(ReportingExtension.class).getBaseDirectory().file("shellcheck").get().getAsFile());
     }
 
     private void configureReportsConventionMapping(Shellcheck task, Project project) {
