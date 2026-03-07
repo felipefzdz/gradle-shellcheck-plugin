@@ -5,48 +5,34 @@ import org.gradle.util.GradleVersion
 
 class ShellcheckCrossVersionTest extends BaseInfraTest {
 
-    boolean useDocker = false
-    String shellcheckBinary = resolveShellcheckBinary()
-
-    private static String resolveShellcheckBinary() {
-        def path = System.getenv('SHELLCHECK_PATH')
-        if (path != null) return path
-        try {
-            def proc = ["which", "shellcheck"].execute()
-            proc.waitFor()
-            if (proc.exitValue() == 0) return proc.text.trim()
-        } catch (ignored) {}
-        return "shellcheck"
-    }
+    boolean useDocker = true
+    String shellcheckBinary = ""
 
     def "works on Gradle #gradleVersion"() {
         given:
-        buildFile << """
-shellcheck {
-    sources = files("${resources.absolutePath}/without_violations")
-    useDocker = $useDocker
-    shellcheckBinary = "$shellcheckBinary"
-}
-"""
-
-        when:
-        def arguments = ["shellcheck", "--stacktrace"]
         if (GradleVersion.version(gradleVersion) < GradleVersion.version("9.0")) {
             def javaHome = findCompatibleJavaHome()
             if (javaHome != null) {
-                arguments += ["-Dorg.gradle.java.home=${javaHome}".toString()]
+                new File(testProjectDir.root, 'gradle.properties') << "org.gradle.java.home=${javaHome}\n"
             }
         }
 
-        def gradleRunner = GradleRunner.create()
+        buildFile << """
+shellcheck {
+    sources = files("${resources.absolutePath}/without_violations")
+}
+"""
+
+        expect:
+        // Cannot use withDebug(true) here: debug mode runs in-process (same JVM),
+        // which ignores org.gradle.java.home and forces old Gradle on Java 25.
+        GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(arguments)
+                .withArguments("shellcheck", "--stacktrace")
                 .withProjectDir(testProjectDir.root)
                 .withGradleVersion(gradleVersion)
-
-        then:
-        gradleRunner.build()
+                .build()
 
         where:
         gradleVersion << ["7.0", "7.6.3", "8.10.1", "9.0", "9.4.0"]
