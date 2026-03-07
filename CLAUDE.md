@@ -50,7 +50,7 @@ Tests are **functional/integration tests** using Gradle TestKit + Spock Framewor
 - **ShellcheckDockerPluginFuncTest** — Docker-mode tests (requires Docker). Adds tests for image pull errors, version config, configuration cache, env var preservation.
 - **ShellcheckBinaryPluginFuncTest** — Local binary tests. Skipped unless `SHELLCHECK_PATH` env var is set.
 - **ShellcheckInstallerPluginFuncTest** — macOS-only; tests brew auto-installation.
-- **ShellcheckCrossVersionTest** — Tests against Gradle 7.0, 7.6.3, 8.10.1.
+- **ShellcheckCrossVersionTest** — Tests against Gradle 7.0, 7.6.3, 8.10.1, 9.0, 9.4.0. Uses Docker mode to avoid architecture mismatches on Apple Silicon (see Gotchas).
 
 Test resources in `src/functionalTest/resources/`: `with_violations/`, `without_violations/`, `another_without_violations/`, `no_shell_scripts/`.
 
@@ -61,3 +61,8 @@ Test resources in `src/functionalTest/resources/`: `with_violations/`, `without_
 - Environment scrubbing in `Shell.java` preserves only PATH and HOME — this is intentional for Docker on Mac compatibility.
 - XML reports from multiple invocations are merged by combining `<file>` elements under a single `<checkstyle>` root.
 - Java 8 target compatibility.
+
+## Gotchas
+
+- **`withDebug(true)` bypasses JDK selection.** Debug mode runs Gradle in-process (same JVM), which ignores `org.gradle.java.home` in `gradle.properties`. Cross-version tests must NOT use debug mode so the forked daemon picks up the correct JDK.
+- **Apple Silicon + x86_64 JDKs.** Older Gradle versions (< 9) need JDK 11/17, which may only be available as x86_64 (Rosetta). An x86_64 Gradle daemon can intermittently fail to exec arm64 native binaries like shellcheck. Use Docker mode in tests to avoid this architecture mismatch.
